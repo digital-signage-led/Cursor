@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>防災モニタリングシステム（WBGT / 大雨情報）</title>
-<!-- LAYOUT_VER:17 -->
+<!-- LAYOUT_VER:43 -->
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap');
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -16,12 +16,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'No
 /* ===== サイネージ（LED解像度固定） ===== */
 #signage-root{position:fixed;inset:0;width:100%;height:100%;}
 html.signage #signage-root{position:relative;inset:auto;overflow:hidden;flex-shrink:0;}
-html.signage-preview,html.signage-preview body{overflow:auto;}
-html.signage-preview body{display:flex;align-items:center;justify-content:center;min-height:100%;min-width:100%;}
-html.signage-preview #signage-root{transform:scale(var(--signage-scale,1));transform-origin:center center;}
-html.signage-1to1,html.signage-1to1 body{overflow:auto;height:auto;min-height:100%;}
-html.signage-1to1 body{display:flex;align-items:flex-start;justify-content:center;padding:16px;background:#111;}
-html.signage-1to1 #signage-root{box-shadow:0 0 0 2px #333;}
+html.signage-preview,html.signage-preview body{overflow:hidden;width:100%;height:100%;height:100dvh;margin:0;padding:0;}
+html.signage-preview body{display:flex;align-items:center;justify-content:center;background:#000;}
+html.signage-preview #signage-root{transform:scale(var(--signage-scale,1));transform-origin:center center;flex-shrink:0;}
+html.signage-1to1,html.signage-1to1 body{overflow:auto!important;height:auto!important;min-height:100%;}
+html.signage-1to1 body{display:flex;align-items:flex-start;justify-content:center;padding:16px;background:#111;min-width:100%;}
+html.signage-1to1 #signage-root{box-shadow:0 0 0 2px #333;flex-shrink:0;}
 html.signage .board{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;}
 html.signage .wbgt-body{padding:0;}
 html.signage .wbgt-bar{margin:0;}
@@ -30,43 +30,44 @@ html.signage.embed #tune-launcher{display:none!important;}
 html.signage #signage-credit{position:absolute;}
 
 /* サイネージ: vw/vh はブラウザ全体を参照するため、LEDキャンバス(px)基準で固定 */
-/* P3.47·75インチ（432×288）基準の比率で全解像度にスケール（--sg-ref-w/h は initSignage が設定） */
+/* P3.47·75インチ（432×288）基準の比率 → 実キャンバス(--signage-w/h)で全解像度を比例スケール */
+/* P3.47·75インチ（432×288）基準 · アスペクト比自動補正: min(幅基準, 高さ基準) */
 html.signage{
-  --sg-ref-w:var(--signage-w);
-  --sg-ref-h:var(--signage-h);
-  --sg-h-ratio:calc(var(--signage-h) / 288px); /* P3.47·75"高さ(288px)基準の倍率 */
-  --sg-hdr-t:calc(var(--sg-ref-w) * 0.036);
-  --sg-hdr-d:calc(var(--sg-ref-w) * 0.024);
-  --sg-hdr-c:calc(var(--sg-ref-w) * 0.055);
-  --sg-name:min(calc(var(--sg-ref-w) * 0.14), calc(var(--sg-ref-h) * 0.17));
+  --sg-h-ratio:calc(var(--signage-h) / 288px);
+  --sg-w-ratio:calc(var(--signage-w) / 432px);
+  --sg-fit:min(var(--sg-w-ratio), var(--sg-h-ratio));
+  --sg-ar-k:1;
+  --sg-hdr-t:calc(min(calc(var(--signage-w) * 0.036), calc(var(--signage-h) * 0.054)) * var(--sg-ar-k));
+  --sg-hdr-d:calc(min(calc(var(--signage-w) * 0.028), calc(var(--signage-h) * 0.042)) * var(--sg-ar-k));
+  --sg-hdr-c:calc(min(calc(var(--signage-w) * 0.061), calc(var(--signage-h) * 0.092)) * var(--sg-ar-k));
+  --sg-name:calc(min(calc(var(--signage-w) * 0.14), calc(var(--signage-h) * 0.17)) * var(--sg-ar-k));
   --sg-msg:calc(var(--sg-name) * 0.36);
-  --sg-card-lbl:calc(var(--sg-ref-w) * 0.022);
-  --sg-card-ic:calc(var(--sg-ref-w) * 0.029);
-  --sg-card-v:calc(var(--sg-ref-w) * 0.043);
-  --sg-card-u:calc(var(--sg-ref-w) * 0.022);
-  --sg-badge:calc(var(--sg-ref-w) * 0.026);
+  --sg-card-lbl:min(calc(var(--signage-w) * 0.022), calc(var(--signage-h) * 0.033));
+  --sg-card-ic:min(calc(var(--signage-w) * 0.029), calc(var(--signage-h) * 0.0435));
+  --sg-card-v:min(calc(var(--signage-w) * 0.043), calc(var(--signage-h) * 0.0645));
+  --sg-card-u:min(calc(var(--signage-w) * 0.022), calc(var(--signage-h) * 0.033));
+  --sg-badge:min(calc(var(--signage-w) * 0.026), calc(var(--signage-h) * 0.039));
   --sg-card-loupe:1.42;
-  --sg-card-fit-scale:1;
-  --sg-bar-h:calc(var(--sg-ref-h) * 30 / 288);
-  --sg-wbar-n:calc(var(--sg-ref-w) * 0.043);
-  --sg-wbar-rg:calc(var(--sg-ref-w) * 0.032);
+  --sg-bar-h:calc(var(--signage-h) * 30 / 288);
+  --sg-wbar-n:min(calc(var(--signage-w) * 0.043), calc(var(--signage-h) * 0.0645));
+  --sg-wbar-rg:min(calc(var(--signage-w) * 0.032), calc(var(--signage-h) * 0.048));
   --sg-wbar-rg-mt:calc(var(--sg-wbar-n) * 0.08);
-  --sg-bar-pad-y:calc(var(--sg-ref-h) * 5 / 288);
-  --sg-wbar-tri-w:calc(var(--sg-ref-w) * 0.022);
-  --sg-wbar-tri-h:calc(var(--sg-ref-h) * 0.022);
-  --sg-wbar-tri-clear:calc(var(--sg-ref-h) * 0.006);
+  --sg-bar-pad-y:calc(var(--signage-h) * 5 / 288);
+  --sg-wbar-tri-w:calc(var(--signage-w) * 0.022);
+  --sg-wbar-tri-h:calc(var(--signage-h) * 0.022);
+  --sg-wbar-tri-clear:calc(var(--signage-h) * 0.006);
 }
 html.signage[data-tier="sm"]{
-  --sg-bar-h:calc(var(--sg-ref-h) * 36 / 288);
+  --sg-bar-h:calc(var(--signage-h) * 36 / 288);
 }
 html.signage[data-tier="md"],
 html.signage[data-tier="lg"]{
-  --sg-bar-h:calc(var(--sg-ref-h) * 40 / 288);
+  --sg-bar-h:calc(var(--signage-h) * 40 / 288);
 }
-html.signage .wbgt-hdr{min-height:12%!important;padding:calc(var(--sg-ref-h) * 0.018) calc(var(--sg-ref-w) * 0.022)!important;}
+html.signage .wbgt-hdr{min-height:12%!important;padding:calc(var(--signage-h) * 0.018) calc(var(--signage-w) * 0.022)!important;}
 html.signage .wbgt-hdr .t{font-size:var(--sg-hdr-t)!important;font-weight:900!important;line-height:1.15;max-width:62%;}
 html.signage .wbgt-hdr .t-l1{white-space:normal;word-break:keep-all;}
-html.signage .wbgt-hdr .d{font-size:var(--sg-hdr-d)!important;font-weight:700!important;}
+html.signage .wbgt-hdr .d{font-size:var(--sg-hdr-d)!important;font-weight:800!important;}
 html.signage .wbgt-hdr .c{font-size:var(--sg-hdr-c)!important;font-weight:900!important;}
 html.signage .wbgt-body{
   display:grid!important;
@@ -76,13 +77,13 @@ html.signage .wbgt-body{
   --status-msg-size:var(--sg-msg);
 }
 html.signage .wbgt-top{
-  padding:calc(var(--sg-ref-h) * 0.01) calc(var(--sg-ref-w) * 0.022) 0!important;
+  padding:calc(var(--signage-h) * 0.01) calc(var(--signage-w) * 0.022) 0!important;
   overflow:hidden;position:relative!important;justify-content:center!important;
   min-height:0!important;flex:none!important;
 }
 html.signage .wbgt-top .left{
   text-align:center!important;width:100%;
-  padding-left:calc(var(--sg-ref-w) * 0.022)!important;
+  padding-left:calc(var(--signage-w) * 0.022)!important;
   padding-right:var(--face-text-pad)!important;box-sizing:border-box;align-self:center;
   display:flex!important;flex-direction:column!important;align-items:center!important;
   container-type:inline-size;
@@ -107,22 +108,22 @@ html.signage .wbgt-face img{
 html.signage[data-pitch="P3.47"][data-inch="75"] .wbgt-body.wbgt-lv0{--face-img-scale:0.9;}
 
 html.signage .wbgt-cards{
-  gap:calc(var(--sg-ref-w) * 0.008)!important;
-  margin:0 calc(var(--sg-ref-w) * 0.02) calc(var(--sg-wbar-tri-h) + var(--sg-wbar-tri-clear))!important;
+  gap:calc(var(--signage-w) * 0.008)!important;
+  margin:0 calc(var(--signage-w) * 0.02) calc(var(--sg-wbar-tri-h) + var(--sg-wbar-tri-clear))!important;
   align-self:stretch;min-height:0!important;flex:none!important;
 }
 html.signage .wcard{
   border-radius:var(--card-r)!important;
-  padding:calc(var(--sg-ref-h) * 0.014) calc(var(--sg-ref-w) * 0.008)!important;
+  padding:calc(var(--signage-h) * 0.014) calc(var(--signage-w) * 0.008)!important;
   display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;
   gap:0!important;overflow:hidden!important;position:relative!important;
   container-type:size;
 }
 /* ルーペ: 拡大後ちょうどカード内に収まる（はみ出し防止） */
 html.signage .wcard-in{
-  --sg-card-loupe-eff:calc(var(--sg-card-loupe) * var(--sg-card-fit-scale));
+  --sg-card-loupe-eff:var(--sg-card-loupe);
   display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;
-  gap:calc(var(--sg-ref-h) * 0.004)!important;
+  gap:calc(var(--signage-h) * 0.004)!important;
   width:calc(100% / var(--sg-card-loupe-eff))!important;
   height:calc(100% / var(--sg-card-loupe-eff))!important;
   transform:scale(var(--sg-card-loupe-eff))!important;
@@ -135,6 +136,7 @@ html.signage .wcard .lbl{
   white-space:nowrap!important;line-height:1.05!important;
 }
 html.signage .wcard .ic{font-size:min(calc(var(--sg-card-ic) * 1.15), 1.15em)!important;}
+html.signage .wcard .ic-thermo svg{height:1.35em!important;}
 html.signage .wcard .v{
   font-size:min(calc(var(--sg-card-v) * 1.2), 54cqh, calc(96cqw / 5.5))!important;
   font-weight:900!important;line-height:1!important;
@@ -144,49 +146,54 @@ html.signage .wcard .u{
 }
 html.signage .wbgt-badge{
   font-size:min(calc(var(--sg-badge) * 1.2), 34cqh)!important;font-weight:900!important;
-  padding:2px calc(var(--sg-ref-w) * 0.016)!important;white-space:nowrap!important;line-height:1.05!important;
+  padding:2px calc(var(--signage-w) * 0.016)!important;white-space:nowrap!important;line-height:1.05!important;
 }
 /* 温度/湿度/更新時刻は行間を詰めてカード内に収める */
-html.signage .wcard-metric .wcard-in{gap:calc(var(--sg-ref-h) * 0.002)!important;}
+html.signage .wcard-metric .wcard-in{gap:calc(var(--signage-h) * 0.002)!important;}
 
 /* P3.47·75": WBGTカードのみ少し小さく */
 html.signage[data-pitch="P3.47"][data-inch="75"] .wcard-wbgt .wbgt-badge{
   font-size:min(calc(var(--sg-badge) * 1.05), 30cqh)!important;
-  padding:2px calc(var(--sg-ref-w) * 0.014)!important;
+  padding:2px calc(var(--signage-w) * 0.014)!important;
 }
 html.signage[data-pitch="P3.47"][data-inch="75"] .wcard-wbgt .v{
   font-size:min(calc(var(--sg-card-v) * 1.05), 46cqh, calc(96cqw / 5.5))!important;
 }
 
-/* P2.87·75"(528×352): 実キャンバスに合わせた余白＋中身バランス（空白過多を解消） */
-html.signage[data-pitch="P2.87"][data-inch="75"] .wcard{
-  padding:calc(var(--signage-h) * 0.034) calc(var(--signage-w) * 0.015)!important;
+/* P3.47·125": 数値は432×288比例で拡大 / 白カード上の文言は少し小さく */
+html.signage[data-pitch="P3.47"][data-inch="125"]{
+  --sg-card-loupe:1.48;
 }
-html.signage[data-pitch="P2.87"][data-inch="75"] .wcard-in{
-  --sg-card-loupe-eff:calc(var(--sg-card-loupe) * (var(--signage-h) / var(--sg-ref-h)) * 0.96);
-  gap:5cqh!important;
+html.signage[data-pitch="P3.47"][data-inch="125"] .wcard .lbl{
+  font-size:min(calc(var(--sg-card-lbl) * 1.1), 30cqh)!important;
 }
-html.signage[data-pitch="P2.87"][data-inch="75"] .wcard-metric .wcard-in{gap:4cqh!important;}
+html.signage[data-pitch="P3.47"][data-inch="125"] .wcard .ic{
+  font-size:min(calc(var(--sg-card-ic) * 1.05), 1.08em)!important;
+}
+html.signage[data-pitch="P3.47"][data-inch="125"] .wbgt-badge{
+  font-size:min(calc(var(--sg-badge) * 1.1), 30cqh)!important;
+}
+html.signage[data-pitch="P3.47"][data-inch="125"] .wcard .v{
+  font-size:min(calc(var(--sg-card-v) * 1.28), 58cqh, calc(96cqw / 5.5))!important;
+}
+html.signage[data-pitch="P3.47"][data-inch="125"] .wcard .u{
+  font-size:min(calc(var(--sg-card-u) * 1.22), 32cqh)!important;
+}
+
+/* P2.87·75": 白カード上の文言を少し小さく */
 html.signage[data-pitch="P2.87"][data-inch="75"] .wcard .lbl{
-  font-size:min(calc(var(--sg-card-lbl) * 1.28), 30cqh)!important;
+  font-size:min(calc(var(--sg-card-lbl) * 1.06), 30cqh)!important;
 }
-html.signage[data-pitch="P2.87"][data-inch="75"] .wcard .ic{font-size:min(calc(var(--sg-card-ic) * 1.2), 1.15em)!important;}
-html.signage[data-pitch="P2.87"][data-inch="75"] .wcard-metric .v{
-  font-size:min(calc(var(--sg-card-v) * 1.28), 48cqh, calc(90cqw / 5.5))!important;
+html.signage[data-pitch="P2.87"][data-inch="75"] .wcard .ic{
+  font-size:min(calc(var(--sg-card-ic) * 1.02), 1.05em)!important;
 }
-html.signage[data-pitch="P2.87"][data-inch="75"] .wcard-wbgt .wbgt-badge{
-  font-size:min(calc(var(--sg-badge) * 1.05), 28cqh)!important;
-  padding:3px calc(var(--signage-w) * 0.016)!important;
+html.signage[data-pitch="P2.87"][data-inch="75"] .wbgt-badge{
+  font-size:min(calc(var(--sg-badge) * 1.06), 30cqh)!important;
 }
-html.signage[data-pitch="P2.87"][data-inch="75"] .wcard-wbgt .v{
-  font-size:min(calc(var(--sg-card-v) * 1.05), 44cqh, calc(90cqw / 5.5))!important;
-}
-html.signage[data-pitch="P2.87"][data-inch="75"] .wcard-metric .u{
-  font-size:min(calc(var(--sg-card-u) * 1.2), 26cqh)!important;
-}
-html.signage .wbgt-body{--card-r:calc(var(--sg-ref-w) * 0.016);--bar-r:calc(var(--sg-ref-w) * 0.028);--bar-h:var(--sg-bar-h);}
+
+html.signage .wbgt-body{--card-r:calc(var(--signage-w) * 0.016);--bar-r:calc(var(--signage-w) * 0.028);--bar-h:var(--sg-bar-h);}
 html.signage .wbgt-bar-wrap{
-  padding:var(--sg-bar-pad-y) calc(var(--sg-ref-w) * 0.022) var(--sg-bar-pad-y)!important;
+  padding:var(--sg-bar-pad-y) calc(var(--signage-w) * 0.022) var(--sg-bar-pad-y)!important;
   flex:none!important;align-self:stretch;
 }
 html.signage .wbgt-bar{
@@ -194,10 +201,10 @@ html.signage .wbgt-bar{
   overflow:visible!important;
   min-height:var(--bar-h)!important;
 }
-html.signage .wbar.active{padding-top:calc(var(--sg-ref-h) * 0.011)!important;padding-bottom:calc(var(--sg-ref-h) * 0.011)!important;}
+html.signage .wbar.active{padding-top:calc(var(--signage-h) * 0.011)!important;padding-bottom:calc(var(--signage-h) * 0.011)!important;}
 html.signage .wbar{
   flex:1!important;
-  padding:calc(var(--sg-ref-h) * 0.009) 1px!important;
+  padding:calc(var(--signage-h) * 0.009) 1px!important;
   min-width:0;container-type:inline-size;
 }
 html.signage .wbar[data-idx="0"]{border-radius:var(--card-r) 0 0 var(--card-r)!important;z-index:1;}
@@ -235,18 +242,10 @@ html.signage .wbar.active::before{
   border-top:var(--sg-wbar-tri-h) solid #000!important;
   top:calc(var(--sg-wbar-tri-h) * -1)!important;
 }
-html.signage .wbgt-foot{height:max(4px, calc(var(--sg-ref-h) * 0.016))!important;}
+html.signage .wbgt-foot{height:max(4px, calc(var(--signage-h) * 0.016))!important;}
 
 /* 432×288（P3.47·75インチ / xs）向け */
 html.signage[data-tier="xs"] .wbgt-hdr .t{max-width:58%;}
-
-/* 75インチ: レベル名・メッセージを基準の2倍（白カード等・上部は下の共通ルール） */
-html.signage[data-inch="75"]{
-  --sg-card-fit-scale:calc(var(--signage-h) / var(--sg-ref-h));
-  --sg-75-text-scale:2;
-  --sg-name:min(calc(var(--sg-ref-w) * 0.14 * var(--sg-75-text-scale)), calc(var(--sg-ref-h) * 0.17 * var(--sg-75-text-scale)));
-  --sg-msg:calc(var(--sg-name) * 0.36);
-}
 
 /* WBGT 5段階: 注意と同一サイズ（1行目・2行目とも 98px/23px 基準×高さ比） */
 html.signage .wbgt-body{
@@ -356,8 +355,8 @@ html.demo-active:not(.tune-active) #tune-launcher{display:block;}
 html.signage[data-tier="xs"] .wbgt-hdr .t-l1{display:none;}
 html.signage[data-tier="xs"] .wbgt-hdr .t-xs{display:flex;}
 .wbgt-hdr .r{text-align:right;line-height:1.05;align-self:center;flex-shrink:0;}
-.wbgt-hdr .d{font-size:clamp(10px,1.35vw,20px);font-weight:700;color:#111;}
-.wbgt-hdr .c{font-size:clamp(22px,4.6vw,68px);font-weight:900;color:#111;}
+.wbgt-hdr .d{font-size:clamp(10px,min(1.35vw,2.25vh),20px);font-weight:800;color:#111;}
+.wbgt-hdr .c{font-size:clamp(22px,min(4.6vw,7.7vh),68px);font-weight:900;color:#111;}
 
 .wbgt-body{
   flex:1;min-height:0;display:grid;grid-template-rows:50fr 23fr 12fr auto;
@@ -397,7 +396,45 @@ html.signage[data-tier="xs"] .wbgt-hdr .t-xs{display:flex;}
   position:absolute;right:var(--face-right);top:var(--face-top);transform:translateY(-50%);
   width:var(--face-w);flex-shrink:0;display:flex;align-items:center;justify-content:center;
 }
-.wbgt-face img{width:100%;border-radius:50%;filter:drop-shadow(0 4px 10px rgba(0,0,0,0.2));pointer-events:none;}
+.wbgt-face img{width:100%;border-radius:50%;filter:drop-shadow(0 4px 10px rgba(0,0,0,0.2));pointer-events:none;transform-origin:center center;}
+/* WBGT顔イラスト — 5段階（意味が伝わる動き。translate/rotate/filter で scale 調整と競合しない） */
+.wbgt-face img[class^="anim-"]{will-change:translate,rotate,filter;}
+.wbgt-face img.anim-safe{animation:face-safe 3.2s ease-in-out infinite;}
+.wbgt-face img.anim-caution{animation:face-caution 4s ease-in-out infinite;}
+.wbgt-face img.anim-warning{animation:face-warning 2.4s ease-out infinite;}
+.wbgt-face img.anim-severe{animation:face-severe 3s ease-in-out infinite;}
+.wbgt-face img.anim-danger{animation:face-danger 1.45s ease-in-out infinite;}
+/* 安全：呼吸 — ゆっくり上下（落ち着き・安定） */
+@keyframes face-safe{
+ 0%,100%{translate:0 0;filter:drop-shadow(0 4px 10px rgba(0,0,0,0.2));}
+ 50%{translate:0 -5%;filter:drop-shadow(0 5px 12px rgba(0,0,0,0.16));}
+}
+/* 注意：左右確認 — 周囲を見渡す動き */
+@keyframes face-caution{
+ 0%,18%,82%,100%{translate:0 0;rotate:0deg;}
+ 28%{translate:-9% 0;rotate:-6deg;}
+ 58%{translate:9% 0;rotate:6deg;}
+}
+/* 警戒：心拍 — ドキドキ2回→休止（異変を感じる） */
+@keyframes face-warning{
+ 0%,100%,72%{translate:0 0;filter:drop-shadow(0 4px 10px rgba(0,0,0,0.22));}
+ 7%,14%{translate:0 -5%;filter:drop-shadow(0 6px 14px rgba(0,0,0,0.28));}
+ 21%,28%{translate:0 -5%;filter:drop-shadow(0 6px 14px rgba(0,0,0,0.28));}
+ 35%{translate:0 0;filter:drop-shadow(0 4px 10px rgba(0,0,0,0.22));}
+}
+/* 厳重警戒：警告パルス — ゆっくり1回上下＋淡いオレンジの光（心拍とは別） */
+@keyframes face-severe{
+ 0%,100%{translate:0 0;filter:drop-shadow(0 4px 10px rgba(0,0,0,0.22));}
+ 45%{translate:0 -5%;filter:drop-shadow(0 6px 16px rgba(255,120,35,0.38));}
+ 60%{translate:0 -2%;filter:drop-shadow(0 5px 13px rgba(255,110,30,0.28));}
+}
+/* 危険：横揺れ＋傾き — 左右に揺れながら傾く（不安定・危険感） */
+@keyframes face-danger{
+ 0%,100%{translate:0 0;rotate:0deg;filter:drop-shadow(0 4px 10px rgba(0,0,0,0.24));}
+ 25%{translate:-7% 0;rotate:-7deg;filter:drop-shadow(0 5px 14px rgba(220,55,45,0.42));}
+ 50%{translate:0 1%;rotate:0deg;filter:drop-shadow(0 4px 10px rgba(0,0,0,0.24));}
+ 75%{translate:7% 0;rotate:7deg;filter:drop-shadow(0 5px 14px rgba(220,55,45,0.42));}
+}
 html.face-edit .wbgt-face{
   touch-action:none;z-index:10;cursor:pointer;
 }
@@ -426,6 +463,8 @@ html.face-edit .wbgt-face.face-dragging{
 .wcard .lbl{display:flex;align-items:center;justify-content:center;gap:4px;width:100%;font-size:min(calc(clamp(12px,1.78vw,26px) * 1.2),34cqh);font-weight:700;color:#222;white-space:nowrap;line-height:1.05;}
 .wcard .val{display:flex;align-items:baseline;justify-content:center;width:100%;max-width:100%;gap:0.12em;text-align:center;}
 .wcard .ic{font-size:min(calc(clamp(14px,2.05vw,30px) * 1.15),1.15em);}
+.wcard .ic-thermo{display:inline-flex;align-items:center;justify-content:center;line-height:1;vertical-align:middle;}
+.wcard .ic-thermo svg{width:1em;height:1.35em;display:block;}
 .wcard .v{font-size:min(calc(clamp(20px,3.9vw,58px) * 1.2),54cqh,calc(96cqw/5.5));font-weight:900;color:#111;line-height:1;}
 .wcard .u{font-size:min(calc(clamp(12px,1.68vw,24px) * 1.15),28cqh);font-weight:700;color:#555;margin-left:0;}
 .wbgt-badge{display:inline-block;color:#fff;font-size:min(calc(clamp(12px,1.9vw,28px) * 1.2),34cqh);font-weight:900;border-radius:999px;padding:3px 14px;transition:background 0.35s;align-self:center;white-space:nowrap;line-height:1.05;}
@@ -564,13 +603,15 @@ html.tune-active .wbar .n{font-size:calc(var(--tune-wbar-n) * 1px)!important;}
 html.tune-active .wbar .rg{font-size:calc(var(--tune-wbar-rg) * 1px)!important;}
 html.tune-active #signage-credit{bottom:calc(var(--tune-credit-bottom) * 1px)!important;}
 
-/* ========== RAIN MODE（参考比率 20% / 60% / 20%） ========== */
+/* ========== RAIN MODE（参考 20% / 60% / 20% · 左27% / 右73% 固定） ========== */
 .rain{
   flex:1;min-height:0;overflow:hidden;
   display:grid;
-  grid-template-rows:20% 60% 20%;
+  grid-template-rows:20fr 60fr 20fr;
   --rain-pad-x:2.6vw;
   --rain-pad-y:1.6vh;
+  --rain-left-w:27%;
+  --rain-face-share:30%;
   --rain-txt:#fff;
   --rain-divider:#fff;
   transition:background 0.35s;
@@ -578,54 +619,66 @@ html.tune-active #signage-credit{bottom:calc(var(--tune-credit-bottom) * 1px)!im
 .rain-hdr{
   min-height:0;overflow:hidden;
   display:grid;
-  grid-template-columns:minmax(0,26%) 1fr minmax(0,20%);
+  grid-template-columns:1fr auto;
   align-items:end;
-  gap:0.8vw;
   padding:var(--rain-pad-y) var(--rain-pad-x) calc(var(--rain-pad-y)*0.65);
   border-bottom:2px solid var(--rain-txt);
 }
-.rain-hdr-side{min-width:0;align-self:center;color:var(--rain-txt);padding-bottom:0.4vh;}
-.rain-hdr .hdr-loc .loc-site{font-size:clamp(9px,min(1.35vw,2.2vh),20px);}
-.rain-hdr .hdr-loc .loc-src{font-size:clamp(8px,min(1.15vw,1.9vh),16px);opacity:0.9;}
+.rain-hdr-side{display:none;}
 .rain-hdr .t{
+  grid-column:1/-1;grid-row:1;
   font-size:clamp(22px,min(5.2vw,9.2vh),92px);
   font-weight:900;line-height:1;text-align:center;color:var(--rain-txt);
   min-width:0;align-self:center;padding-bottom:0.25vh;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.rain-hdr .r{text-align:right;line-height:1.05;color:var(--rain-txt);padding-bottom:0.15vh;min-width:0;}
-.rain-hdr .d{font-size:clamp(10px,min(1.45vw,2.5vh),24px);font-weight:700;white-space:nowrap;}
-.rain-hdr .c{font-size:clamp(20px,min(5vw,8.8vh),88px);font-weight:900;white-space:nowrap;}
+.rain-hdr .r{
+  grid-column:2;grid-row:1;z-index:1;
+  display:flex;flex-direction:column;align-items:flex-end;justify-content:center;
+  text-align:right;line-height:1.05;color:var(--rain-txt);min-width:0;
+}
+.rain-hdr .d,.rain-hdr .c{line-height:1;font-variant-numeric:tabular-nums;}
+.rain-hdr .d{font-size:clamp(10px,min(1.35vw,2.25vh),20px);font-weight:800;white-space:nowrap;}
+.rain-hdr .c{font-size:clamp(22px,min(4.6vw,7.7vh),68px);font-weight:900;white-space:nowrap;}
 
 .rain-mid{
   min-height:0;overflow:hidden;
   display:grid;
-  grid-template-columns:27% 2px minmax(0,1fr);
+  grid-template-columns:minmax(0,var(--rain-left-w)) max(1px,2px) minmax(0,1fr);
   column-gap:2.2vw;
   padding:2vh var(--rain-pad-x) 1.6vh;
+  align-items:stretch;
 }
-.rain-mid-left{min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;}
+.rain-mid-left{min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;align-self:stretch;}
 .rain-lvbox{
-  width:100%;max-width:100%;max-height:100%;
-  height:auto;aspect-ratio:320/430;
-  position:relative;flex-shrink:1;
-  border:2px solid transparent;border-radius:12px;overflow:hidden;
+  width:100%;max-width:100%;height:auto;max-height:100%;
+  position:relative;flex-shrink:1;align-self:center;
+  border:none;background:transparent;overflow:visible;
 }
-.rain-lvbox.has-img{border-color:transparent;background:transparent;}
-.rain-lvbox .rain-lv-img{width:100%;height:100%;object-fit:contain;display:block;}
+.rain-lvbox .rain-lv-crop{display:none;overflow:hidden;width:100%;max-height:100%;aspect-ratio:320/268;align-items:flex-start;justify-content:center;}
+.rain-lvbox .rain-lv-img{display:none;width:100%;height:auto;object-fit:cover;object-position:center top;}
+.rain-lvbox.has-img .rain-lv-crop{display:flex;}
+.rain-lvbox.has-img .rain-lv-img{display:block;}
+.rain-lvbox.has-img .rain-lv-fallback{display:none;}
 .rain-lvbox .rain-lv-fallback{
-  position:absolute;inset:0;display:none;
-  flex-direction:column;border-radius:12px;overflow:hidden;
+  display:none;width:100%;max-height:100%;
+  align-items:center;justify-content:center;
 }
-.rain-lvbox.use-fallback .rain-lv-img{display:none;}
 .rain-lvbox.use-fallback .rain-lv-fallback{display:flex;}
+.rain-lv-card{
+  width:100%;max-height:100%;display:flex;flex-direction:column;
+  border-radius:12px;overflow:hidden;box-sizing:border-box;
+}
 .rain-lvbox .cap{
   font-size:clamp(9px,min(1.35vw,2.2vh),22px);font-weight:900;text-align:center;line-height:1.2;
-  padding:0.7vh 0.3vw;flex-shrink:0;
+  padding:0.65vh 0.4vw;flex-shrink:0;width:100%;margin:0;
+  border-radius:0;
 }
 .rain-lvbox .lvwrap{
-  flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  width:100%;aspect-ratio:1;flex:1 1 auto;min-height:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:0.15vh;padding:0.5vh 0.3vw;
+  border:none;border-radius:0;box-sizing:border-box;
 }
 .rain-lvbox .lv{font-size:clamp(11px,min(1.65vw,2.7vh),28px);font-weight:900;line-height:1;}
 .rain-lvbox .num{font-size:clamp(52px,min(11vw,22vh),200px);font-weight:900;line-height:0.88;letter-spacing:-0.04em;}
@@ -634,56 +687,218 @@ html.tune-active #signage-credit{bottom:calc(var(--tune-credit-bottom) * 1px)!im
 
 .rain-main{
   min-width:0;min-height:0;overflow:hidden;
-  display:flex;flex-direction:column;
+  display:grid;
+  grid-template-rows:auto auto minmax(0,1fr);
+  height:100%;
   padding-top:0.4vh;
+  gap:0.9vh;
 }
 .rain-pub{
   align-self:flex-start;flex-shrink:0;border-radius:999px;
-  font-size:clamp(11px,min(1.75vw,3vh),30px);font-weight:900;
-  padding:0.35vh 1.4vw;line-height:1.15;
+  font-size:clamp(10px,min(1.55vw,2.65vh),26px);font-weight:900;
+  padding:0.35vh 1.2vw;line-height:1.2;max-width:100%;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
+.rain-pub-upd{font-size:1.28em;font-weight:900;}
 .rain-name{
   flex-shrink:0;
   font-size:clamp(24px,min(6.2vw,10.5vh),100px);font-weight:900;
-  line-height:1.06;letter-spacing:-0.02em;margin-top:0.9vh;
-  overflow:hidden;
+  line-height:1.06;letter-spacing:-0.02em;margin:0;
+  overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
 }
-.rain-body{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;}
+.rain-body{
+  min-height:0;overflow:hidden;min-width:0;
+  display:grid;grid-template-rows:minmax(0,1fr) auto;
+}
 .rain-action{
-  flex:1;min-height:0;overflow:hidden;
-  display:grid;grid-template-columns:minmax(0,22%) minmax(0,1fr);
-  column-gap:1.8vw;align-items:center;padding:0.6vh 0;
+  min-height:0;overflow:hidden;min-width:0;
+  display:grid;grid-template-columns:minmax(0,var(--rain-face-share)) minmax(0,1fr);
+  column-gap:1.8vw;align-items:center;align-self:center;
 }
-.rain-face{width:100%;max-width:min(16vw,20vh);justify-self:center;}
-.rain-face img{width:100%;height:auto;border-radius:50%;display:block;filter:drop-shadow(0 3px 10px rgba(0,0,0,0.28));}
-.rain-textcol{min-width:0;min-height:0;display:flex;align-items:center;overflow:hidden;}
+.rain-face{width:100%;max-width:100%;justify-self:center;min-width:0;}
+.rain-face img{width:100%;height:auto;border-radius:50%;display:block;filter:none;background:transparent;}
+.rain-textcol{min-width:0;min-height:0;display:flex;align-items:center;overflow:hidden;container-type:inline-size;}
 .rain-msg{
-  font-size:clamp(16px,min(3.6vw,6.2vh),58px);font-weight:900;line-height:1.32;
-  overflow:hidden;
+  font-size:min(clamp(18px,min(4.5vw,7.6vh),70px), calc(100cqi / 11));font-weight:900;line-height:1.28;
+  overflow:hidden;white-space:normal;word-break:keep-all;max-width:100%;
 }
 .rain-sub{
-  flex-shrink:0;
-  font-size:clamp(11px,min(2vw,3.4vh),36px);font-weight:900;line-height:1.32;
-  text-align:right;align-self:flex-end;
-  padding:0.8vh 0 0.2vh;max-width:100%;
-  overflow:hidden;
+  font-size:clamp(12px,min(2.25vw,3.85vh),40px);font-weight:900;line-height:1.32;
+  text-align:right;justify-self:end;align-self:end;
+  padding:0.4vh 0 0;max-width:100%;
+  overflow:hidden;white-space:normal;word-break:keep-all;
 }
 
 .rain-bar{
-  min-height:0;overflow:hidden;
-  display:flex;align-items:stretch;
+  min-height:0;overflow:visible;
+  display:flex;align-items:center;
   gap:0.55vw;
   padding:1.2vh var(--rain-pad-x) 1.8vh;
 }
 .rbar{
-  flex:1;min-width:0;border:2px solid transparent;border-radius:10px;
+  flex:1 1 0;min-width:0;align-self:center;height:66.667%;max-height:100%;
+  border:2px solid #111;border-radius:10px;
   padding:0.55vh 3px;text-align:center;font-weight:900;line-height:1.18;
   display:flex;flex-direction:column;justify-content:center;
+  box-sizing:border-box;
 }
 .rbar .n{font-size:clamp(10px,min(1.5vw,2.6vh),28px);display:block;}
 .rbar .nm{font-size:clamp(9px,min(1.25vw,2.15vh),22px);display:block;margin-top:0.12vh;}
-.rbar.active{outline:3px solid #111;outline-offset:0;z-index:1;}
-.rain.on-dark .rbar.active{outline-color:#fff;}
+.rbar[data-idx="4"]{border-color:#fff;}
+.rbar.active{flex:1.5 1.5 0;align-self:stretch;height:auto;outline:none;z-index:1;}
+.rbar.active .n{font-size:clamp(15px,min(2.5vw,4.3vh),46px);}
+.rbar.active .nm{font-size:clamp(13px,min(2.1vw,3.6vh),36px);}
+.rain[data-rain-lv="4"] .rbar.active,
+.rain[data-rain-lv="5"] .rbar.active{border-color:#fff;}
+.rain[data-rain-lv="1"] .rbar.active,
+.rain[data-rain-lv="2"] .rbar.active,
+.rain[data-rain-lv="3"] .rbar.active{border-color:#111;}
+
+/* ========== RAIN サイネージ（432×288 基準 · 全レベル同一配置） ========== */
+html.signage .rain{
+  grid-template-rows:20fr 60fr 20fr;
+  --rain-pad-x:calc(var(--signage-w) * 0.026);
+  --rain-pad-y:calc(var(--signage-h) * 0.016);
+  --rain-left-w:27%;
+  --rain-face-share:30%;
+  --rain-title-size:calc(min(calc(var(--signage-w) * 0.083), calc(var(--signage-h) * 0.17)) * var(--sg-ar-k));
+  --rain-name-size:calc(min(calc(var(--signage-w) * 0.108), calc(var(--signage-h) * 0.152)) * var(--sg-ar-k));
+  --rain-msg-size:calc(min(calc(var(--signage-w) * 0.055), calc(var(--signage-h) * 0.087)) * var(--sg-ar-k));
+  --rain-sub-size:calc(min(calc(var(--signage-w) * 0.032), calc(var(--signage-h) * 0.048)) * var(--sg-ar-k));
+  --rain-pub-size:calc(min(calc(var(--signage-w) * 0.022), calc(var(--signage-h) * 0.033)) * var(--sg-ar-k));
+  --rain-pub-upd-size:calc(min(calc(var(--signage-w) * 0.030), calc(var(--signage-h) * 0.045)) * var(--sg-ar-k));
+  --rain-bar-n-size:min(calc(var(--signage-w) * 0.023), 22cqi);
+  --rain-bar-nm-size:min(calc(var(--signage-w) * 0.019), 18cqi);
+  --rain-bar-n-active:min(calc(var(--signage-w) * 0.039), 33cqi);
+  --rain-bar-nm-active:min(calc(var(--signage-w) * 0.032), 27cqi);
+  --rain-bar-nm-active-long:min(calc(var(--signage-w) * 0.026), 22cqi);
+  --rain-mid-gap:calc(var(--signage-w) * 0.022);
+  --rain-action-gap:calc(var(--signage-w) * 0.016);
+  --rain-main-gap:calc(var(--signage-h) * 0.009);
+}
+html.signage .rain-hdr{
+  grid-template-columns:1fr auto!important;
+  padding:var(--rain-pad-y) var(--rain-pad-x) calc(var(--rain-pad-y) * 0.65)!important;
+  border-bottom-width:max(1px, calc(var(--signage-h) * 0.007))!important;
+}
+html.signage .rain-hdr .t{
+  grid-column:1/-1!important;grid-row:1!important;
+  font-size:var(--rain-title-size)!important;
+  padding-bottom:calc(var(--signage-h) * 0.002)!important;
+}
+html.signage .rain-hdr .r{
+  grid-column:2!important;grid-row:1!important;z-index:1!important;
+  display:flex!important;flex-direction:column!important;align-items:flex-end!important;
+  justify-content:center!important;line-height:1.05!important;
+}
+html.signage .rain-hdr .d,
+html.signage .rain-hdr .c{line-height:1!important;font-variant-numeric:tabular-nums!important;}
+html.signage .rain-hdr .d{font-size:var(--sg-hdr-d)!important;font-weight:800!important;}
+html.signage .rain-hdr .c{font-size:var(--sg-hdr-c)!important;font-weight:900!important;}
+
+html.signage .rain-vdiv{width:max(1px, calc(var(--signage-h) * 0.007))!important;}
+html.signage .rain-lvbox.has-img .rain-lv-crop{
+  max-height:min(100%, calc(var(--signage-h) * 0.44))!important;
+  aspect-ratio:320/268!important;
+}
+html.signage .rain-lvbox.has-img .rain-lv-img{
+  width:100%!important;height:auto!important;
+  object-fit:cover!important;object-position:center top!important;
+}
+html.signage .rain-lv-card{
+  max-height:min(100%, calc(var(--signage-h) * 0.44))!important;
+  border-radius:calc(var(--signage-w) * 0.028)!important;
+}
+html.signage .rain-lvbox .cap{
+  font-size:min(calc(var(--signage-w) * 0.021), calc(var(--signage-h) * 0.0315))!important;
+  padding:calc(var(--signage-h) * 0.007) calc(var(--signage-w) * 0.008)!important;
+}
+html.signage .rain-lvbox .lvwrap{
+  gap:calc(var(--signage-h) * 0.001)!important;
+  padding:calc(var(--signage-h) * 0.005) calc(var(--signage-w) * 0.003)!important;
+}
+html.signage .rain-lvbox .lv{font-size:min(calc(var(--signage-w) * 0.026), calc(var(--signage-h) * 0.039))!important;}
+html.signage .rain-lvbox .num{font-size:min(calc(var(--signage-w) * 0.17), calc(var(--signage-h) * 0.35))!important;}
+
+html.signage .rain-mid{
+  grid-template-columns:minmax(0,var(--rain-left-w)) max(1px, calc(var(--signage-h) * 0.007)) minmax(0,1fr)!important;
+  column-gap:var(--rain-mid-gap)!important;
+  padding:calc(var(--signage-h) * 0.02) var(--rain-pad-x) calc(var(--signage-h) * 0.016)!important;
+  overflow:hidden!important;align-items:stretch!important;
+}
+html.signage .rain-mid-left{align-items:center!important;justify-content:center!important;align-self:stretch!important;}
+html.signage .rain-main{
+  min-width:0!important;overflow:hidden!important;
+  display:grid!important;grid-template-rows:auto auto minmax(0,1fr)!important;
+  height:100%!important;gap:var(--rain-main-gap)!important;
+  padding-top:calc(var(--signage-h) * 0.004)!important;
+}
+html.signage .rain-body{
+  min-width:0!important;min-height:0!important;
+  display:grid!important;grid-template-rows:minmax(0,1fr) auto!important;
+}
+html.signage .rain-action{
+  grid-template-columns:minmax(0,var(--rain-face-share)) minmax(0,1fr)!important;
+  column-gap:var(--rain-action-gap)!important;min-width:0!important;
+  align-items:center!important;align-self:center!important;
+}
+html.signage .rain-textcol{min-width:0!important;container-type:inline-size!important;}
+html.signage .rain-msg{
+  font-size:min(var(--rain-msg-size), calc(100cqi / 11))!important;
+  line-height:1.28!important;max-width:100%!important;
+  white-space:normal!important;word-break:keep-all!important;
+}
+html.signage .rain-sub{
+  font-size:var(--rain-sub-size)!important;
+  padding:calc(var(--signage-h) * 0.004) 0 0!important;
+  white-space:normal!important;word-break:keep-all!important;
+  text-align:right!important;justify-self:end!important;align-self:end!important;
+}
+html.signage .rain-name{
+  font-size:var(--rain-name-size)!important;
+  margin:0!important;line-height:1.06!important;
+  white-space:nowrap!important;text-overflow:ellipsis!important;
+}
+html.signage .rain-pub{
+  font-size:var(--rain-pub-size)!important;
+  padding:calc(var(--signage-h) * 0.003) calc(var(--signage-w) * 0.012)!important;
+  border-radius:999px!important;max-width:100%!important;
+  white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
+}
+html.signage .rain-pub-upd{font-size:var(--rain-pub-upd-size)!important;font-weight:900!important;}
+html.signage .rain-face{max-width:100%!important;width:100%!important;}
+
+html.signage .rain-bar{
+  gap:calc(var(--signage-w) * 0.0055)!important;
+  padding:calc(var(--signage-h) * 0.012) var(--rain-pad-x) calc(var(--signage-h) * 0.018)!important;
+  align-items:center!important;overflow:visible!important;
+}
+html.signage .rbar{
+  flex:1 1 0!important;align-self:center!important;
+  height:66.667%!important;max-height:100%!important;
+  border-width:max(1px, calc(var(--signage-h) * 0.007))!important;
+  border-radius:calc(var(--signage-w) * 0.023)!important;
+  padding:calc(var(--signage-h) * 0.0055) 1px!important;
+  container-type:inline-size;
+}
+html.signage .rbar .n{font-size:var(--rain-bar-n-size)!important;line-height:1.12!important;}
+html.signage .rbar .nm{font-size:var(--rain-bar-nm-size)!important;margin-top:calc(var(--signage-h) * 0.001)!important;line-height:1.12!important;}
+html.signage .rbar[data-idx="3"] .nm,
+html.signage .rbar[data-idx="4"] .nm{font-size:min(calc(var(--signage-w) * 0.015), 14cqi)!important;}
+html.signage .rbar.active .n{font-size:var(--rain-bar-n-active)!important;}
+html.signage .rbar.active .nm{font-size:var(--rain-bar-nm-active)!important;}
+html.signage .rbar.active[data-idx="3"] .nm,
+html.signage .rbar.active[data-idx="4"] .nm{font-size:var(--rain-bar-nm-active-long)!important;}
+html.signage .rbar.active{
+  flex:1.5 1.5 0!important;align-self:stretch!important;height:auto!important;
+  outline:none!important;z-index:1!important;
+}
+html.signage .rbar[data-idx="4"]{border-color:#fff!important;}
+html.signage .rain[data-rain-lv="4"] .rbar.active,
+html.signage .rain[data-rain-lv="5"] .rbar.active{border-color:#fff!important;}
+html.signage .rain[data-rain-lv="1"] .rbar.active,
+html.signage .rain[data-rain-lv="2"] .rbar.active,
+html.signage .rain[data-rain-lv="3"] .rbar.active{border-color:#111!important;}
 </style>
 </head>
 <body>
@@ -740,7 +955,7 @@ html.tune-active #signage-credit{bottom:calc(var(--tune-credit-bottom) * 1px)!im
       <div class="wbgt-face" id="wFaceBox"><img id="wFace" src="" alt=""></div>
     </div>
     <div class="wbgt-cards">
-      <div class="wcard wcard-metric"><div class="wcard-in"><div class="lbl"><span class="ic">🌡️</span>温度</div><div class="val"><span class="v" id="wT">26.0</span><span class="u">℃</span></div></div></div>
+      <div class="wcard wcard-metric"><div class="wcard-in"><div class="lbl"><span class="ic ic-thermo" aria-hidden="true"><svg viewBox="0 0 20 32" xmlns="http://www.w3.org/2000/svg"><rect x="7.5" y="2" width="5" height="18" rx="2.5" fill="#f8bbd0" stroke="#bdbdbd" stroke-width="1"/><circle cx="10" cy="26" r="6" fill="#e53935" stroke="#bdbdbd" stroke-width="1"/><rect x="8.5" y="10" width="3" height="10" rx="1.5" fill="#e53935"/></svg></span>温度</div><div class="val"><span class="v" id="wT">26.0</span><span class="u">℃</span></div></div></div>
       <div class="wcard wcard-metric"><div class="wcard-in"><div class="lbl"><span class="ic">💧</span>湿度</div><div class="val"><span class="v" id="wH">50</span><span class="u">%</span></div></div></div>
       <div class="wcard wcard-wbgt"><div class="wcard-in"><span class="wbgt-badge" id="wBadge">WBGT</span><div class="val"><span class="v" id="wW">23.0</span></div></div></div>
       <div class="wcard wcard-metric"><div class="wcard-in"><div class="lbl"><span class="ic">🕐</span>更新時刻</div><div class="val"><span class="v" id="wUpd">15:00</span></div></div></div>
@@ -769,16 +984,18 @@ html.tune-active #signage-credit{bottom:calc(var(--tune-credit-bottom) * 1px)!im
     <div class="rain-mid">
       <div class="rain-mid-left">
         <div class="rain-lvbox use-fallback" id="rLvBox">
-          <img class="rain-lv-img" id="rLvImg" src="" alt="">
+          <div class="rain-lv-crop"><img class="rain-lv-img" id="rLvImg" src="" alt=""></div>
           <div class="rain-lv-fallback">
-            <div class="cap">現在の警戒レベル</div>
-            <div class="lvwrap"><div class="lv">レベル</div><div class="num" id="rNum">1</div></div>
+            <div class="rain-lv-card">
+              <div class="cap">現在の警戒レベル</div>
+              <div class="lvwrap"><div class="lv">レベル</div><div class="num" id="rNum">1</div></div>
+            </div>
           </div>
         </div>
       </div>
       <div class="rain-vdiv" id="rVdiv"></div>
       <div class="rain-main">
-        <span class="rain-pub" id="rPub">発表中</span>
+        <span class="rain-pub" id="rPub"><span id="rPubState">発表中</span><span class="rain-pub-upd" id="rPubUpd"></span></span>
         <div class="rain-name" id="rName">早期注意情報</div>
         <div class="rain-body">
           <div class="rain-action">
@@ -821,26 +1038,31 @@ html.tune-active #signage-credit{bottom:calc(var(--tune-credit-bottom) * 1px)!im
 const CONFIG = {
   DEMO_MODE:    false,       // true=デモ（⚙表示） / false=本番（⚙非表示）★本番はfalse
   DEFAULT_MODE: 'wbgt',      // ループ無効時の起動画面
-  LOOP_SEC:       8,         // WBGT・大雨 各画面の表示秒数
-  RAIN_LOOP_MIN:  2,         // 大雨をループに含める最小レベル（2=大雨注意報以上）
+  LOOP_SEC:       8,         // WBGT・大雨 各画面の表示秒数（発表中は交互に切替）
+  RAIN_LOOP_MIN:  2,         // 大雨注意報以上が発表されたらループに含める
   GAS_URL:        'https://script.google.com/macros/s/AKfycbypX8gmSDsx449D61PUHEkud6863ENczcivJ4axfVxZhLNDtcjx1we7fYTPeTw0kmBx/exec',
-  SITE_NAME:      '千葉県いすみ市',           // 左上に表示する現場名
+  SITE_NAME:      '大阪府大阪市',           // 左上に表示する現場名
   WBGT_POINT:     '620780',  // 環境省 大阪（大阪管区気象台・APIは62078）
   WBGT_PLACE:     '環境省（観測地点：大阪）', // 左上・WBGT画面（取得元は自動付記）
   WBGT_ENV_FALLBACK: true,   // GAS失敗時に環境省API/CSVを直接取得
-  RAIN_AREA:      '1223800', // 気象庁 千葉県いすみ市
-  RAIN_PLACE:     '気象庁（いすみ市）',       // 左上・大雨画面
+  RAIN_AREA:      '2710000', // 気象庁 大阪府大阪市
+  RAIN_PLACE:     '気象庁（大阪市）',       // 左上・大雨画面
+  RAIN_JMA_FALLBACK: true,   // GAS失敗時に気象庁APIを直接取得
   FETCH_MIN:      15,        // データ取得間隔（分）
   SHOW_CREDIT:    false,     // データ提供元（画面下部）※一旦非表示
   SHOW_LOC_SRC:   false,     // 左上の気象庁・環境省表記 ※一旦非表示
-  /* --- サイネージ（LED）--- 現場のピッチ・インチに合わせて設定
+  /* --- サイネージ（LED）--- ★現場のピッチ・インチに合わせて必ず設定
      P3.47: 75"=432×288 / 100"=576×432 / 125"=720×576
      P2.87: 75"=528×352 / 100"=704×528 / 125"=880×704
-     URLでも指定可: ?pitch=P3.47&inch=100
-     SIGNAGE_PREVIEW_FIT: PC確認時に画面へ収める（本番サイネージでは true 推奨） */
-  SIGNAGE_PITCH:  '',        // 例: 'P3.47' | 'P2.87'（空=PCフル画面）
-  SIGNAGE_INCH:   100,       // 75 | 100 | 125
-  SIGNAGE_PREVIEW_FIT: true,  // PC確認時にLED解像度へスケール表示
+     URLでも上書き可: ?pitch=P3.47&inch=100
+     空にするとPCフル画面レイアウト（サイネージプレビューと不一致） */
+  SIGNAGE_PITCH:  'P3.47',    // 'P3.47' | 'P2.87' ★現場のLEDに合わせる
+  SIGNAGE_INCH:   100,        // 75 | 100 | 125 ★現場のLEDに合わせる
+  SIGNAGE_W:      0,          // 任意解像度（pitch/inchより優先）。0=テーブル参照
+  SIGNAGE_H:      0,
+  SIGNAGE_PREVIEW_FIT: true,  // true=画面に自動フィット(本番推奨) / false=1:1実解像度。URL ?fit=0 で1:1
+  SIGNAGE_FIT_MODE:  'cover', // 'cover'=黒帯なしで画面全体に表示 / 'contain'=比率維持・黒帯あり
+  PIN_MODE:       '',        // URL ?mode=rain|wbgt で表示ループを固定
   /* --- WBGT顔アイコン（位置・大きさ）---
      サイネージ: キャンバス幅に対する比率 / PC: vw・% */
   FACE_SIZE_RATIO:  0.31,   // サイネージ幅 × この値 = 顔の幅(px)（75"基準と同じ比率）
@@ -849,10 +1071,28 @@ const CONFIG = {
   FACE_SIZE_VW:     32,      // PCフル画面時の幅(vw)
   FACE_RIGHT_VW:    5.5,     // PCフル画面時の右余白(vw)
 };
-/* P3.47·75インチ（432×288）基準 — 75インチはピッチ問わず同じレイアウト
-   P2.87·75"=528×352（実キャンバス 1.222×）も ref 432×288 で統一
-   100インチ: P3.47=576×432（1.333×/1.5×） P2.87=704×528（1.630×/1.833×） */
-const LAYOUT_VER=17;
+function applyConfigFromUrl(){
+ const q=new URLSearchParams(location.search);
+ if(q.has('site')) CONFIG.SITE_NAME=decodeURIComponent(q.get('site'));
+ if(q.has('pitch')) CONFIG.SIGNAGE_PITCH=q.get('pitch');
+ if(q.has('inch')) CONFIG.SIGNAGE_INCH=+q.get('inch');
+ if(q.has('w')) CONFIG.SIGNAGE_W=+q.get('w');
+ if(q.has('h')) CONFIG.SIGNAGE_H=+q.get('h');
+ if(q.has('point')) CONFIG.WBGT_POINT=q.get('point');
+ else if(q.has('wbgt')) CONFIG.WBGT_POINT=q.get('wbgt');
+ if(q.has('area')) CONFIG.RAIN_AREA=q.get('area');
+ if(q.has('wbgt_place')) CONFIG.WBGT_PLACE=decodeURIComponent(q.get('wbgt_place'));
+ if(q.has('rain_place')) CONFIG.RAIN_PLACE=decodeURIComponent(q.get('rain_place'));
+ if(q.has('gas')) CONFIG.GAS_URL=q.get('gas');
+ if(q.has('loop')) CONFIG.LOOP_SEC=Math.max(1,+q.get('loop')||8);
+ if(q.has('fetch')) CONFIG.FETCH_MIN=Math.max(1,+q.get('fetch')||15);
+ if(q.has('fit')) CONFIG.SIGNAGE_PREVIEW_FIT=!['0','false','no'].includes((q.get('fit')||'').toLowerCase());
+ if(q.has('fitmode')) CONFIG.SIGNAGE_FIT_MODE=q.get('fitmode').toLowerCase()==='contain'?'contain':'cover';
+}
+applyConfigFromUrl();
+/* P3.47·75インチ（432×288）基準 — 432×288 の比率を実キャンバス幅/高さに直接適用
+   75/100/125インチ・P2.87/P3.47 すべて同じ比例則でスケール */
+const LAYOUT_VER=43;
 const SG_REF_75_W=432;
 const SG_REF_75_H=288;
 const FACE_REF_75_W=SG_REF_75_W;
@@ -881,30 +1121,37 @@ const SIGNAGE_RES={
  'P3.47':{75:[432,288],100:[576,432],125:[720,576]},
  'P2.87':{75:[528,352],100:[704,528],125:[880,704]}
 };
+let signageFitFn=null;
+function applySignageAspectCorr(w,h,pitch,inch){
+ const row=pitch&&SIGNAGE_RES[pitch];
+ const ref=row&&inch&&row[inch]?row[inch]:[SG_REF_75_W,SG_REF_75_H];
+ const refAr=ref[0]/ref[1];
+ const ar=w/h;
+ const k=(Math.abs(ar-refAr)<0.002||ar>=refAr)?1:Math.sqrt(ar/refAr);
+ document.documentElement.style.setProperty('--sg-ar',String(ar));
+ document.documentElement.style.setProperty('--sg-ar-k',String(k));
+}
 function initSignage(){
  const q=new URLSearchParams(location.search);
  const pitch=q.get('pitch')||CONFIG.SIGNAGE_PITCH||'';
  const inch=+(q.get('inch')||CONFIG.SIGNAGE_INCH||0);
- const row=pitch&&SIGNAGE_RES[pitch];
- const pair=row&&row[inch];
- if(!pair) return null;
- const [w,h]=pair;
+ const cw=+(q.get('w')||CONFIG.SIGNAGE_W||0);
+ const ch=+(q.get('h')||CONFIG.SIGNAGE_H||0);
+ let w,h;
+ if(cw>0&&ch>0){ w=cw; h=ch; }
+ else { const row=pitch&&SIGNAGE_RES[pitch]; const pair=row&&row[inch]; if(!pair) return null; [w,h]=pair; }
  CONFIG._signage={pitch,inch,w,h};
- let meta=document.querySelector('meta[name="viewport"]');
- if(!meta){meta=document.createElement('meta');meta.name='viewport';document.head.appendChild(meta);}
- meta.content='width='+w+', height='+h+', initial-scale=1, maximum-scale=1, user-scalable=no';
  document.documentElement.classList.add('signage');
  if(q.get('embed')==='1') document.documentElement.classList.add('embed');
  document.documentElement.dataset.pitch=pitch;
  document.documentElement.dataset.inch=String(inch);
  document.documentElement.dataset.layoutVer=String(LAYOUT_VER);
- const refW=inch===75?SG_REF_75_W:w;
- const refH=inch===75?SG_REF_75_H:h;
  document.documentElement.dataset.tier=inch===75?'xs':h<=300?'xs':h<=380?'sm':h<=460?'md':'lg';
  document.documentElement.style.setProperty('--signage-w',w+'px');
  document.documentElement.style.setProperty('--signage-h',h+'px');
- document.documentElement.style.setProperty('--sg-ref-w',refW+'px');
- document.documentElement.style.setProperty('--sg-ref-h',refH+'px');
+ document.documentElement.style.setProperty('--sg-scale-w',String(w/SG_REF_75_W));
+ document.documentElement.style.setProperty('--sg-scale-h',String(h/SG_REF_75_H));
+ applySignageAspectCorr(w,h,pitch,inch);
  const root=document.getElementById('signage-root');
  root.style.width=w+'px';
  root.style.height=h+'px';
@@ -913,26 +1160,46 @@ function initSignage(){
   const fit=q.get('fit');
   if(fit==='0'||fit==='false'||fit==='no') return false;
   if(fit==='1'||fit==='true'||fit==='yes') return true;
+  if(q.get('tune')==='1'||document.documentElement.classList.contains('tune-active')) return CONFIG.SIGNAGE_PREVIEW_FIT;
+  if(!CONFIG.DEMO_MODE) return true;
   return CONFIG.SIGNAGE_PREVIEW_FIT;
+ }
+ function updateViewport(){
+  let meta=document.querySelector('meta[name="viewport"]');
+  if(!meta){meta=document.createElement('meta');meta.name='viewport';document.head.appendChild(meta);}
+  if(document.documentElement.classList.contains('signage-preview')){
+   meta.content='width=device-width, initial-scale=1';
+  }else if(document.documentElement.classList.contains('signage-1to1')){
+   meta.content='width='+w+', initial-scale=1';
+  }else{
+   meta.content='width='+w+', initial-scale=1, maximum-scale=1, user-scalable=no';
+  }
  }
  function fit(){
   if(!shouldPreviewFit()){
-   document.documentElement.classList.remove('signage-preview');
+   document.documentElement.classList.remove('signage-preview','signage-cover','signage-contain');
    document.documentElement.classList.add('signage-1to1');
    document.documentElement.style.removeProperty('--signage-scale');
+   updateViewport();
    return;
   }
   document.documentElement.classList.remove('signage-1to1');
-  if(!CONFIG.SIGNAGE_PREVIEW_FIT) return;
   document.documentElement.classList.add('signage-preview');
-  const s=Math.min(window.innerWidth/w,window.innerHeight/h);
+  const mode=(CONFIG.SIGNAGE_FIT_MODE==='contain')?'contain':'cover';
+  document.documentElement.classList.toggle('signage-cover',mode==='cover');
+  document.documentElement.classList.toggle('signage-contain',mode==='contain');
+  const sw=window.innerWidth/w,sh=window.innerHeight/h;
+  const s=mode==='cover'?Math.max(sw,sh):Math.min(sw,sh);
   document.documentElement.style.setProperty('--signage-scale',String(s));
+  updateViewport();
  }
+ signageFitFn=fit;
  fit();
  window.addEventListener('resize',fit);
  applyFaceLayout();
  return CONFIG._signage;
 }
+function refitSignageView(){ if(signageFitFn) signageFitFn(); }
 const TUNE_SPECS=[
  {id:'bodyPadT',label:'本文 上余白(px)',def:8,min:0,max:80},
  {id:'bodyPadX',label:'本文 左右余白(px)',def:0,min:0,max:80},
@@ -1210,7 +1477,17 @@ function initTune(){
 }
 const LIVE = !!CONFIG.GAS_URL;
 const dataStatus={wbgt:false,rain:false};
-const lastGood={wbgt:false,rain:false,rainLoop:false};
+const lastGood={wbgt:false,rain:false,rainLoop:false,rainLevel:0,rainUpdated:''};
+function syncLoopStatus(){
+ dataStatus.wbgt=!!lastGood.wbgt;
+ dataStatus.rain=!!lastGood.rainLoop;
+}
+function getLoopScreens(){
+ const s=[];
+ if(dataStatus.wbgt) s.push('wbgt');
+ if(dataStatus.rain) s.push('rain');
+ return s;
+}
 let loopTimer=null;
 let loopScreensKey='';
 let fetchInFlight=false;
@@ -1345,11 +1622,11 @@ const FACES = {
 };
 
 const W_LEVELS=[
- {name:'安全',msg:'適宜に水分補給',bg:'#4A90D9',txt:'#fff',face:'safe',anim:'bounce'},
- {name:'注意',msg:'体調を注意して作業進行',bg:'#FAD24A',txt:'#1a1a1a',face:'caution',anim:''},
- {name:'警戒',msg:'休憩強化',bg:'#F2A91B',txt:'#1a1a1a',face:'warning',anim:''},
- {name:'厳重警戒',msg:'積極的に休憩',bg:'#F47C1B',txt:'#fff',face:'severe',anim:'shake'},
- {name:'危険',msg:'熱中症の危険性が非常に高い',bg:'#E5302A',txt:'#fff',face:'danger',anim:'shake'},
+ {name:'安全',msg:'適宜に水分補給',bg:'#4A90D9',txt:'#fff',face:'safe',anim:'anim-safe'},
+ {name:'注意',msg:'体調を注意して作業進行',bg:'#FAD24A',txt:'#1a1a1a',face:'caution',anim:'anim-caution'},
+ {name:'警戒',msg:'休憩強化',bg:'#F2A91B',txt:'#1a1a1a',face:'warning',anim:'anim-severe'},
+ {name:'厳重警戒',msg:'積極的に休憩',bg:'#F47C1B',txt:'#fff',face:'severe',anim:'anim-warning'},
+ {name:'危険',msg:'熱中症の危険性が非常に高い',bg:'#E5302A',txt:'#fff',face:'danger',anim:'anim-danger'},
 ];
 const W_PILLS=[
  {n:'安全',rg:'21未満',c:'#4A90D9',t:'#fff'},
@@ -1381,7 +1658,9 @@ W_PILLS.forEach((p,i)=>{
 });
 applyWbgtBars(1);
 document.getElementById('wBadge').style.background='#FAD24A';
-document.getElementById('wFace').src=FACES.caution;
+const wFaceInit=document.getElementById('wFace');
+wFaceInit.src=FACES.caution;
+wFaceInit.className='anim-caution';
 function applyWbgtBars(activeIdx){
  const body=document.getElementById('wBody');
  body.classList.remove('wbgt-lv0','wbgt-lv1','wbgt-lv2','wbgt-lv3','wbgt-lv4');
@@ -1417,6 +1696,7 @@ function renderWBGTUnavailable(){
  document.getElementById('wT').textContent='−−';document.getElementById('wH').textContent='−−';document.getElementById('wW').textContent='−−';
  document.getElementById('wBadge').style.background='#888';
  document.getElementById('wFace').style.display='none';
+ document.getElementById('wFace').className='';
  W_PILLS.forEach((p,j)=>{const b=document.getElementById('wbar'+j);b.classList.remove('active');b.style.background=p.c;b.style.color=p.t;});
  document.getElementById('wBody').classList.remove('wbgt-lv0','wbgt-lv1','wbgt-lv2','wbgt-lv3','wbgt-lv4');
  wBarEl.className='wbgt-bar';
@@ -1473,18 +1753,98 @@ function applyWbgtResult(d){
 function applyRainResult(d){
  const lv=parseInt(d.level,10);
  if(!(lv>=1&&lv<=5)) return false;
+ const prevLoop=lastGood.rainLoop;
  lastGood.rain=true;
+ lastGood.rainLevel=lv;
  lastGood.rainLoop=lv>=CONFIG.RAIN_LOOP_MIN;
  dataStatus.rain=lastGood.rainLoop;
+ if(d.updated!=null&&d.updated!==''){rainUpdated=d.updated;lastGood.rainUpdated=d.updated;}
+ else if(lastGood.rainUpdated) rainUpdated=lastGood.rainUpdated;
  applyRainData(d);
+ if(prevLoop!==lastGood.rainLoop) loopScreensKey='';
  return true;
+}
+function prefectureCodeFromArea(areaCode){
+ const s=String(areaCode);
+ return s.length>=2?s.slice(0,2)+'0000':s;
+}
+function class10FromArea(areaCode){
+ const s=String(areaCode);
+ return s.length>=6?s.substring(0,2)+'0030':s;
+}
+function findAreaItem(items,code){
+ if(!items) return null;
+ for(const it of items) if(String(it.areaCode)===String(code)) return it;
+ return null;
+}
+function kindToRainLevel(k){
+ if(!k) return 0;
+ const st=String(k.status||'');
+ if(st.indexOf('なし')>=0) return 1;
+ if(st.indexOf('解除')>=0&&st.indexOf('継続')<0) return 0;
+ const blob=JSON.stringify(k);
+ if(blob.indexOf('大雨特別')>=0||blob.indexOf('レベル５')>=0||blob.indexOf('レベル5')>=0) return 5;
+ if(blob.indexOf('大雨危険')>=0||blob.indexOf('レベル４')>=0||blob.indexOf('レベル4')>=0) return 4;
+ if(blob.indexOf('大雨警報')>=0&&blob.indexOf('注意')<0) return 3;
+ if(blob.indexOf('大雨注意')>=0) return 2;
+ const c=String(k.code||'');
+ if(!c) return 0;
+ if(c==='33') return 5;
+ if(c==='39'||c==='40'||c==='41'||c==='42') return 4;
+ if(c==='03') return 3;
+ if(c==='10') return 2;
+ return 0;
+}
+function kindsToRainLevel(kinds){
+ if(!kinds||!kinds.length) return 1;
+ let maxLevel=1;
+ for(const k of kinds) maxLevel=Math.max(maxLevel,kindToRainLevel(k));
+ return maxLevel;
+}
+async function fetchRainLevelR8(areaCode){
+ const code=String(areaCode);
+ const pref=prefectureCodeFromArea(code);
+ const res=await fetch('https://www.jma.go.jp/bosai/warning/data/r8/'+pref+'.json',{cache:'no-store'});
+ if(!res.ok) throw new Error('jma r8 '+res.status);
+ const list=await res.json();
+ if(!list.length||!list[0].warning) throw new Error('jma r8 empty');
+ const head=list[0];
+ const w=head.warning;
+ let maxLevel=1;
+ const item20=findAreaItem(w.class20Items,code);
+ if(item20) maxLevel=Math.max(maxLevel,kindsToRainLevel(item20.kinds));
+ if(maxLevel<=1){
+  const item10=findAreaItem(w.class10Items,class10FromArea(code));
+  if(item10) maxLevel=Math.max(maxLevel,kindsToRainLevel(item10.kinds));
+ }
+ return{level:maxLevel,updated:head.reportDatetime||''};
+}
+async function fetchRainFromJma(areaCode){
+ return fetchRainLevelR8(areaCode);
+}
+async function fetchRainLocalProxy(){
+ const url='/api/rain?area='+encodeURIComponent(CONFIG.RAIN_AREA);
+ const res=await fetch(url,{cache:'no-store'});
+ if(!res.ok) throw new Error('proxy http');
+ const d=await res.json();
+ if(d.error||d.level==null) throw new Error(d.error||'proxy empty');
+ return d;
 }
 async function fetchRainData(){
  const extra={area:CONFIG.RAIN_AREA};
- return fetchGasJsonp(gasUrl('rain',extra)).catch(()=>
-  fetch(gasUrl('rain',extra),{cache:'no-store',redirect:'follow',mode:'cors'})
-   .then(r=>{if(!r.ok) throw new Error('http');return r.json();})
- );
+ try{
+  const rain=await fetchGasJsonp(gasUrl('rain',extra)).catch(()=>
+   fetch(gasUrl('rain',extra),{cache:'no-store',redirect:'follow',mode:'cors'})
+    .then(r=>{if(!r.ok) throw new Error('http');return r.json();})
+  );
+  if(rain&&!rain.error&&rain.level!=null) return rain;
+ }catch(e){}
+ const host=location.hostname;
+ if(host==='127.0.0.1'||host==='localhost'){
+  try{ return await fetchRainLocalProxy(); }catch(e){}
+ }
+ if(CONFIG.RAIN_JMA_FALLBACK) return await fetchRainFromJma(CONFIG.RAIN_AREA);
+ throw new Error('rain unavailable');
 }
 async function fetchAll(){
  if(!LIVE||fetchInFlight) return;
@@ -1492,32 +1852,37 @@ async function fetchAll(){
  try{
   let wbgtOk=false,rainOk=false;
   try{
-   wbgtOk=applyWbgtResult(await fetchWbgtData());
+   const all=await fetchGasData({point:CONFIG.WBGT_POINT,area:CONFIG.RAIN_AREA});
+   if(all.wbgt&&!all.wbgt.error) wbgtOk=applyWbgtResult(all.wbgt);
+   if(all.rain&&all.rain.level!=null&&!all.rain.error) rainOk=applyRainResult(all.rain);
   }catch(e){}
-  try{
-   const rain=await fetchRainData();
-   if(rain&&!rain.error&&rain.level!=null) rainOk=applyRainResult(rain);
-  }catch(e){}
+  if(!wbgtOk){
+   try{ wbgtOk=applyWbgtResult(await fetchWbgtData()); }catch(e){}
+  }
+  if(!rainOk){
+   try{
+    const rain=await fetchRainData();
+    if(rain&&!rain.error&&rain.level!=null) rainOk=applyRainResult(rain);
+   }catch(e){}
+  }
   if(!wbgtOk&&!lastGood.wbgt) renderWBGTUnavailable();
   if(!rainOk&&!lastGood.rain) renderRainUnavailable();
-  if(!wbgtOk) dataStatus.wbgt=lastGood.wbgt;
-  if(!rainOk) dataStatus.rain=lastGood.rainLoop;
+  if(!rainOk) rainUpdated=lastGood.rainUpdated||'';
  }catch(e){
   if(!lastGood.wbgt) renderWBGTUnavailable();
   if(!lastGood.rain) renderRainUnavailable();
-  dataStatus.wbgt=lastGood.wbgt;
-  dataStatus.rain=lastGood.rainLoop;
  }finally{
   fetchInFlight=false;
+  syncLoopStatus();
   restartDisplayLoop();
  }
 }
 const R_LEVELS={
- 1:{name:'早期注意情報',msg:'今後の気象情報に<br>ご注意ください',sub:'急な天候変化に備え最新情報をご確認ください',bg:'#103246',txt:'#fff',face:'caution',anim:'',box:{bodyFill:'#fff',bodyTxt:'#111',border:'#111',capFill:'#111',capTxt:'#fff'},pub:{fill:'#111',txt:'#fff'}},
+ 1:{name:'早期注意情報',msg:'今後の気象情報に<br>ご注意ください',sub:'急な天候変化に備え最新情報をご確認ください',bg:'#103246',txt:'#fff',face:'caution',anim:'',box:{bodyFill:'#fff',bodyTxt:'#111',border:'transparent',capFill:'#111',capTxt:'#fff'},pub:{fill:'#111',txt:'#fff'}},
  2:{name:'大雨注意報',msg:'災害への心構えを<br>高めてください',sub:'屋外作業の安全確認を行ってください',bg:'#F2E700',txt:'#111',face:'warning',anim:'',box:{bodyFill:'#fff',bodyTxt:'#111',border:'#111',capFill:'#111',capTxt:'#fff'},pub:{fill:'#111',txt:'#fff'}},
- 3:{name:'大雨警報',msg:'危険な場所には<br>近づかないでください',sub:'作業の継続可否を確認してください',bg:'#FF2800',txt:'#fff',face:'warning',anim:'shake',box:{bodyFill:'transparent',bodyTxt:'#fff',border:'#fff',capFill:'#FF2800',capTxt:'#fff'},pub:{fill:'#fff',txt:'#FF2800'}},
- 4:{name:'大雨危険警報',msg:'危険な場所から<br>避難してください',sub:'身の安全を最優先してください',bg:'#AA00AA',txt:'#fff',face:'danger',anim:'shake',box:{bodyFill:'transparent',bodyTxt:'#fff',border:'#fff',capFill:'#AA00AA',capTxt:'#fff'},pub:{fill:'#fff',txt:'#AA00AA'}},
- 5:{name:'大雨特別警報',msg:'命を守る行動を<br>とってください',sub:'直ちに安全確保を行ってください',bg:'#0C0C0C',txt:'#fff',face:'danger',anim:'shake',box:{bodyFill:'transparent',bodyTxt:'#fff',border:'#fff',capFill:'#0C0C0C',capTxt:'#fff'},pub:{fill:'#fff',txt:'#111'}},
+ 3:{name:'大雨警報',msg:'危険な場所には<br>近づかないでください',sub:'作業の継続可否を確認してください',bg:'#FF2800',txt:'#fff',face:'warning',anim:'',box:{bodyFill:'transparent',bodyTxt:'#fff',border:'#fff',capFill:'#fff',capTxt:'#FF2800'},pub:{fill:'#fff',txt:'#FF2800'}},
+ 4:{name:'大雨危険警報',msg:'危険な場所から<br>避難してください',sub:'身の安全を最優先してください',bg:'#AA00AA',txt:'#fff',face:'danger',anim:'',box:{bodyFill:'transparent',bodyTxt:'#fff',border:'#fff',capFill:'#fff',capTxt:'#AA00AA'},pub:{fill:'#fff',txt:'#AA00AA'}},
+ 5:{name:'大雨特別警報',msg:'命を守る行動を<br>とってください',sub:'直ちに安全確保を行ってください',bg:'#0C0C0C',txt:'#fff',face:'danger',anim:'',box:{bodyFill:'transparent',bodyTxt:'#fff',border:'#fff',capFill:'#fff',capTxt:'#111'},pub:{fill:'#fff',txt:'#111'}},
 };
 const R_PILLS=[
  {lv:'レベル1',nm:'早期注意情報',c:'#fff',t:'#111'},
@@ -1527,55 +1892,114 @@ const R_PILLS=[
  {lv:'レベル5',nm:'大雨特別警報',c:'#0C0C0C',t:'#fff'},
 ];
 const RAIN_LV_IMG='assets/rain-levels/level-';
+const RAIN_FACES={
+ 1:'assets/rain-faces/lv1.png',
+ 2:'assets/rain-faces/lv2.png',
+ 3:'assets/rain-faces/lv3.png',
+ 4:'assets/rain-faces/lv4.png',
+ 5:'assets/rain-faces/lv5.png',
+};
 let rainLevel=1;
+let rainUpdated='';
+function formatRainReportTime(iso){
+ if(!iso) return '';
+ const d=new Date(iso);
+ if(isNaN(d.getTime())) return '';
+ const pad=n=>String(n).padStart(2,'0');
+ return d.getFullYear()+'年'+pad(d.getMonth()+1)+'月'+pad(d.getDate())+'日'+pad(d.getHours())+'時'+pad(d.getMinutes())+'分更新';
+}
+function updateRainPub(){
+ const pub=document.getElementById('rPub');
+ const state=document.getElementById('rPubState');
+ const updEl=document.getElementById('rPubUpd');
+ const upd=formatRainReportTime(rainUpdated);
+ state.textContent='発表中';
+ updEl.textContent=upd?' '+upd:'';
+ pub.style.display='';
+}
+async function ensureRainUpdated(){
+ if(rainUpdated||!CONFIG.RAIN_JMA_FALLBACK) return;
+ try{
+  const d=await fetchRainFromJma(CONFIG.RAIN_AREA);
+  if(d&&d.updated){
+   rainUpdated=d.updated;
+   lastGood.rainUpdated=d.updated;
+   updateRainPub();
+  }
+ }catch(e){}
+}
 const rBarEl=document.getElementById('rBar');
-R_PILLS.forEach((p,i)=>{const d=document.createElement('div');d.className='rbar';d.id='rbar'+i;d.innerHTML=`<span class="n">${p.lv}</span><span class="nm">${p.nm}</span>`;rBarEl.appendChild(d);});
+R_PILLS.forEach((p,i)=>{const d=document.createElement('div');d.className='rbar';d.id='rbar'+i;d.dataset.idx=String(i);d.innerHTML=`<span class="n">${p.lv}</span><span class="nm">${p.nm}</span>`;rBarEl.appendChild(d);});
 function applyRainLvBoxStyles(L){
  const box=document.getElementById('rLvBox');
+ const card=box.querySelector('.rain-lv-card');
  const cap=box.querySelector('.cap');
  const lvwrap=box.querySelector('.lvwrap');
- box.style.borderColor=L.box.border;
  cap.style.background=L.box.capFill;
  cap.style.color=L.box.capTxt;
  lvwrap.style.background=L.box.bodyFill;
+ if(card){
+  card.style.border=(L.box.border&&L.box.border!=='transparent')?`2px solid ${L.box.border}`:'none';
+ }
  box.querySelector('.lv').style.color=L.box.bodyTxt;
  const num=document.getElementById('rNum');
  num.style.color=L.box.bodyTxt;
  num.textContent=rainLevel;
+}
+function pngHasTransparency(img){
+ try{
+  const w=img.naturalWidth,h=img.naturalHeight;
+  if(!w||!h) return false;
+  const c=document.createElement('canvas');
+  c.width=w;c.height=h;
+  const ctx=c.getContext('2d',{willReadFrequently:true});
+  ctx.drawImage(img,0,0);
+  const a=(x,y)=>ctx.getImageData(x,y,1,1).data[3];
+  const pts=[[0,0],[w-1,0],[0,h-1],[w-1,h-1],[w>>1,0],[w>>1,h-1]];
+  for(const [x,y] of pts) if(a(x,y)<250) return true;
+  for(let x=0;x<w;x+=Math.max(1,Math.floor(w/10))) if(a(x,h-1)<250) return true;
+  return false;
+ }catch(e){return false;}
 }
 function setRainLvImage(lv){
  const L=R_LEVELS[lv];
  const box=document.getElementById('rLvBox');
  const img=document.getElementById('rLvImg');
  function showFallback(){box.classList.remove('has-img');box.classList.add('use-fallback');applyRainLvBoxStyles(L);}
- function showImg(){box.classList.add('has-img');box.classList.remove('use-fallback');box.style.borderColor='transparent';}
- img.onload=showImg;
+ function showImg(){box.classList.add('has-img');box.classList.remove('use-fallback');}
+ function onReady(){
+  if(!img.naturalWidth){showFallback();return;}
+  if(!pngHasTransparency(img)){showFallback();return;}
+  showImg();
+ }
+ img.onload=onReady;
  img.onerror=showFallback;
  img.src=RAIN_LV_IMG+lv+'.png';
  img.alt='警戒レベル'+lv;
- if(img.complete){if(img.naturalWidth>0) showImg(); else showFallback();}
+ if(img.complete){if(img.naturalWidth>0) onReady(); else showFallback();}
 }
 function rUpdate(){
  const L=R_LEVELS[rainLevel];
  const area=document.getElementById('rainArea');
  area.style.background=L.bg;
  area.style.setProperty('--rain-txt',L.txt);
- area.style.setProperty('--rain-divider',L.box.border);
+ area.style.setProperty('--rain-divider',L.txt);
  area.classList.toggle('on-dark',rainLevel>=3);
+ area.dataset.rainLv=String(rainLevel);
  setRainLvImage(rainLevel);
- const pub=document.getElementById('rPub');pub.style.background=L.pub.fill;pub.style.color=L.pub.txt;
+ const pub=document.getElementById('rPub');pub.style.background=L.pub.fill;pub.style.color=L.pub.txt;updateRainPub();
  const nm=document.getElementById('rName');nm.textContent=L.name;nm.style.color=L.txt;
  const mg=document.getElementById('rMsg');mg.innerHTML=L.msg;mg.style.color=L.txt;
  const sb=document.getElementById('rSub');sb.textContent=L.sub;sb.style.color=L.txt;
- const f=document.getElementById('rFace');f.src=FACES[L.face];f.className=L.anim;f.style.display='';
+ const f=document.getElementById('rFace');f.src=RAIN_FACES[rainLevel]||FACES[L.face];f.className='';f.style.display='';
  R_PILLS.forEach((p,i)=>{
   const b=document.getElementById('rbar'+i);
   const a=(i+1)===rainLevel;
   b.classList.toggle('active',a);
   b.style.background=p.c;
   b.style.color=p.t;
-  b.style.borderColor='transparent';
  });
+ ensureRainUpdated();
 }
 // 取得失敗時：警戒レベルを推定せず「取得不可」のみ
 function renderRainUnavailable(){
@@ -1588,17 +2012,22 @@ function renderRainUnavailable(){
  document.getElementById('rLvImg').removeAttribute('src');
  box.classList.remove('has-img');
  box.classList.add('use-fallback');
- box.style.borderColor='#fff';
- const lvwrap=box.querySelector('.lvwrap');lvwrap.style.background='transparent';
+ const card=box.querySelector('.rain-lv-card');
+ if(card) card.style.border='none';
+ const lvwrap=box.querySelector('.lvwrap');
+ lvwrap.style.background='transparent';
  box.querySelector('.lv').style.color='#fff';
  document.getElementById('rNum').style.color='#fff';
  const cap=box.querySelector('.cap');cap.style.background='#888';cap.style.color='#fff';
  document.getElementById('rNum').textContent='−';
  const pub=document.getElementById('rPub');pub.style.background='#888';pub.style.color='#fff';
+ document.getElementById('rPubState').textContent='取得不可';
+ document.getElementById('rPubUpd').textContent='';
  document.getElementById('rName').textContent='取得不可';document.getElementById('rName').style.color='#fff';
  document.getElementById('rMsg').innerHTML='データを取得できません';document.getElementById('rMsg').style.color='#fff';
  document.getElementById('rSub').textContent='';
  document.getElementById('rFace').style.display='none';
+ document.getElementById('rFace').className='';
  R_PILLS.forEach((p,i)=>{const b=document.getElementById('rbar'+i);b.classList.remove('active');b.style.background=p.c;b.style.borderColor='transparent';b.style.color=p.t;});
 }
 function setRain(n){rainLevel=n;rUpdate();if(CONFIG.DEMO_MODE){dataStatus.rain=n>=CONFIG.RAIN_LOOP_MIN;restartDisplayLoop();}}
@@ -1619,17 +2048,35 @@ function setMode(m){const w=(m==='wbgt');
  document.getElementById('modeWbgt').classList.toggle('on',w);
  document.getElementById('modeRain').classList.toggle('on',!w);
  updateLocBadge(m);
+ if(!w) rUpdate();
 }
 function stopDisplayLoop(){
- if(loopTimer){clearInterval(loopTimer);loopTimer=null;}
+ if(loopTimer){clearTimeout(loopTimer);loopTimer=null;}
+}
+function startDisplayLoop(screens){
+ const sec=Math.max(1,CONFIG.LOOP_SEC||8)*1000;
+ let idx=0;
+ function step(){
+  setMode(screens[idx]);
+  if(screens.length<2) return;
+  loopTimer=setTimeout(()=>{
+   idx=(idx+1)%screens.length;
+   step();
+  },sec);
+ }
+ step();
 }
 function restartDisplayLoop(){
  if(document.documentElement.classList.contains('tune-active')) return;
- const screens=[];
- if(dataStatus.wbgt) screens.push('wbgt');
- if(dataStatus.rain) screens.push('rain');
+ if(CONFIG.PIN_MODE){
+  stopDisplayLoop();
+  loopScreensKey='';
+  setMode(CONFIG.PIN_MODE);
+  return;
+ }
+ syncLoopStatus();
+ const screens=getLoopScreens();
  const key=screens.join(',');
- const sec=Math.max(1,CONFIG.LOOP_SEC||8)*1000;
  if(screens.length===0){
   stopDisplayLoop();
   loopScreensKey='';
@@ -1642,16 +2089,10 @@ function restartDisplayLoop(){
   setMode(screens[0]);
   return;
  }
- if(key===loopScreensKey && loopTimer) return;
- const cur=document.getElementById('wbgtBoard').classList.contains('hide')?'rain':'wbgt';
- let idx=screens.includes(cur)?screens.indexOf(cur):0;
+ if(key===loopScreensKey&&loopTimer) return;
  stopDisplayLoop();
  loopScreensKey=key;
- setMode(screens[idx]);
- loopTimer=setInterval(()=>{
-  idx=(idx+1)%screens.length;
-  setMode(screens[idx]);
- },sec);
+ startDisplayLoop(screens);
 }
 function clock(){const n=new Date(),days=['日','月','火','水','木','金','土'];
  const d=n.getFullYear()+'.'+String(n.getMonth()+1).padStart(2,'0')+'.'+String(n.getDate()).padStart(2,'0')+' ('+days[n.getDay()]+')';
@@ -1674,8 +2115,21 @@ function initApp(){
  updateLocBadge(CONFIG.DEFAULT_MODE==='rain'?'rain':'wbgt');
  if(CONFIG.DEMO_MODE){
   const q=new URLSearchParams(location.search);
+  const pin=q.get('mode');
+  if(pin==='rain'||pin==='wbgt') CONFIG.PIN_MODE=pin;
   const lv=q.get('level');
   if(lv!=null&&/^[0-4]$/.test(lv)) document.getElementById('wS').value=W_DEMO_W[+lv];
+  const rlv=q.get('rain');
+  if(rlv!=null&&/^[1-5]$/.test(rlv)) setRain(+rlv);
+  if(CONFIG.PIN_MODE==='rain'){
+   dataStatus.wbgt=false;
+   dataStatus.rain=true;
+   setMode('rain');
+  }else if(CONFIG.PIN_MODE==='wbgt'){
+   dataStatus.wbgt=true;
+   dataStatus.rain=false;
+   setMode('wbgt');
+  }
   ['wS','tS','hS'].forEach(id=>document.getElementById(id).addEventListener('input',wUpdate));
   wUpdate();
   rUpdate();
@@ -1694,6 +2148,9 @@ function initApp(){
   dataStatus.rain=rainLevel>=CONFIG.RAIN_LOOP_MIN;
   restartDisplayLoop();
  }else if(LIVE){
+  renderWBGTUnavailable();
+  renderRainUnavailable();
+  setMode(CONFIG.DEFAULT_MODE==='rain'?'rain':'wbgt');
   tick();
   setInterval(tick,Math.max(1,CONFIG.FETCH_MIN)*60000);
  }else{
@@ -1701,8 +2158,9 @@ function initApp(){
   renderRainUnavailable();
  }
 }
-initSignage();
 if(new URLSearchParams(location.search).get('demo')==='1') CONFIG.DEMO_MODE=true;
+initSignage();
+refitSignageView();
 initTune();
 initApp();
 
