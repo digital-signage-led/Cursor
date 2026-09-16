@@ -1,5 +1,5 @@
 /**
- * 管理画面専用。公開サイネージ画面には読み込まない。
+ * 管理画面専用。操作とURL一覧は上、プレビューは下全面。
  */
 (function (global) {
   "use strict";
@@ -8,53 +8,36 @@
     return document.getElementById(id);
   }
 
-  function bool(el) {
-    return !!el.checked;
+  function toast(text) {
+    var el = $("toast");
+    el.textContent = text;
+    el.hidden = false;
+    setTimeout(function () { el.hidden = true; }, 1600);
   }
 
   function fillPrefSelect() {
     var select = $("pref");
     var list = global.DangerPrefectures.listPrefectures();
-    var i;
     select.innerHTML = "";
-    for (i = 0; i < list.length; i += 1) {
+    list.forEach(function (pref) {
       var option = document.createElement("option");
-      option.value = list[i].id;
-      option.textContent = list[i].name;
+      option.value = pref.id;
+      option.textContent = pref.name;
       select.appendChild(option);
-    }
-  }
-
-  function applyPrefDefaults(prefId) {
-    var pref = global.DangerPrefectures.getPrefecture(prefId);
-    $("lat").value = pref.lat;
-    $("lon").value = pref.lon;
-    $("zoom").value = pref.zoom;
-    $("south").value = pref.bounds[0];
-    $("west").value = pref.bounds[1];
-    $("north").value = pref.bounds[2];
-    $("east").value = pref.bounds[3];
+    });
   }
 
   function defaultSettings() {
     var cfg = global.DangerConfig.CONFIG;
-    var pref = global.DangerPrefectures.getPrefecture(cfg.defaultPref);
     return {
-      pref: pref.id,
+      pref: cfg.defaultPref,
       type: cfg.defaultType,
-      showTitle: cfg.displayDefaults.showTitle,
-      showPrefName: cfg.displayDefaults.showPrefName,
-      showLegend: cfg.displayDefaults.showLegend,
-      showUpdated: cfg.displayDefaults.showUpdated,
-      showHeader: cfg.displayDefaults.showHeader,
-      fitBounds: false,
-      lat: pref.lat,
-      lon: pref.lon,
-      zoom: pref.zoom,
-      south: pref.bounds[0],
-      west: pref.bounds[1],
-      north: pref.bounds[2],
-      east: pref.bounds[3]
+      showTitle: true,
+      showPrefName: true,
+      showLegend: true,
+      showUpdated: true,
+      showHeader: true,
+      showPanel: true
     };
   }
 
@@ -62,19 +45,12 @@
     return {
       pref: $("pref").value,
       type: $("type").value,
-      showTitle: bool($("showTitle")),
-      showPrefName: bool($("showPrefName")),
-      showLegend: bool($("showLegend")),
-      showUpdated: bool($("showUpdated")),
-      showHeader: bool($("showHeader")),
-      fitBounds: bool($("fitBounds")),
-      lat: Number($("lat").value),
-      lon: Number($("lon").value),
-      zoom: Number($("zoom").value),
-      south: Number($("south").value),
-      west: Number($("west").value),
-      north: Number($("north").value),
-      east: Number($("east").value)
+      showTitle: $("showTitle").checked,
+      showPrefName: $("showPrefName").checked,
+      showLegend: $("showLegend").checked,
+      showUpdated: $("showUpdated").checked,
+      showHeader: $("showHeader").checked,
+      showPanel: $("showPanel").checked
     };
   }
 
@@ -86,18 +62,11 @@
     $("showLegend").checked = settings.showLegend;
     $("showUpdated").checked = settings.showUpdated;
     $("showHeader").checked = settings.showHeader;
-    $("fitBounds").checked = settings.fitBounds;
-    $("lat").value = settings.lat;
-    $("lon").value = settings.lon;
-    $("zoom").value = settings.zoom;
-    $("south").value = settings.south;
-    $("west").value = settings.west;
-    $("north").value = settings.north;
-    $("east").value = settings.east;
+    $("showPanel").checked = settings.showPanel !== false;
   }
 
-  function publicUrl(settings) {
-    var url = new URL("../index.html", global.location.href);
+  function displayUrl(settings) {
+    var url = new URL("../", global.location.href);
     url.search = "";
     url.searchParams.set("pref", settings.pref);
     url.searchParams.set("type", settings.type);
@@ -106,117 +75,154 @@
     url.searchParams.set("legend", settings.showLegend ? "1" : "0");
     url.searchParams.set("updated", settings.showUpdated ? "1" : "0");
     url.searchParams.set("header", settings.showHeader ? "1" : "0");
-    url.searchParams.set("lat", String(settings.lat));
-    url.searchParams.set("lon", String(settings.lon));
-    url.searchParams.set("zoom", String(settings.zoom));
-    if (settings.fitBounds) {
-      url.searchParams.set("fit", "1");
-      url.searchParams.set("south", String(settings.south));
-      url.searchParams.set("west", String(settings.west));
-      url.searchParams.set("north", String(settings.north));
-      url.searchParams.set("east", String(settings.east));
-    }
+    url.searchParams.set("panel", settings.showPanel ? "1" : "0");
     return url.href;
   }
 
-  function previewUrl(settings) {
-    var url = new URL(publicUrl(settings));
-    url.searchParams.set("edit", "1");
-    return url.href;
-  }
-
-  function refreshUrl() {
-    $("public-url").value = publicUrl(readForm());
-  }
-
-  function updatePreview() {
-    var settings = readForm();
-    $("preview-frame").src = previewUrl(settings);
-    refreshUrl();
-  }
-
-  function saveSettings() {
-    var settings = readForm();
-    global.localStorage.setItem(global.DangerConfig.CONFIG.storageKey, JSON.stringify(settings));
-    refreshUrl();
-  }
-
-  function loadSettings() {
-    try {
-      var raw = global.localStorage.getItem(global.DangerConfig.CONFIG.storageKey);
-      if (!raw) return false;
-      writeForm(Object.assign(defaultSettings(), JSON.parse(raw)));
-      return true;
-    } catch (err) {
-      return false;
-    }
-  }
-
-  function copyUrl() {
-    var text = $("public-url").value;
+  function copyText(text) {
     if (global.navigator.clipboard && global.navigator.clipboard.writeText) {
       global.navigator.clipboard.writeText(text);
       return;
     }
-    $("public-url").select();
+    var area = document.createElement("textarea");
+    area.value = text;
+    document.body.appendChild(area);
+    area.select();
     document.execCommand("copy");
+    document.body.removeChild(area);
+  }
+
+  function renderUrlTable() {
+    var settings = readForm();
+    var q = ($("url-pref").value || "").trim();
+    var rows = global.DangerPrefectures.listPrefectures().filter(function (pref) {
+      return !q || pref.name.indexOf(q) !== -1 || pref.id.indexOf(q.toLowerCase()) !== -1;
+    });
+    var types = ["land", "inundation", "flood"].map(function (id) {
+      return global.DangerConfig.getContentType(id);
+    });
+    var html = "";
+    var total = 0;
+    rows.forEach(function (pref) {
+      types.forEach(function (type) {
+        var item = Object.assign({}, settings, { pref: pref.id, type: type.id });
+        var href = displayUrl(item);
+        total += 1;
+        html += '<tr data-pref="' + pref.id + '"><td>' + pref.name + "</td><td>" + type.name +
+          '</td><td class="url-cell"><code>' + href + "</code></td><td>" +
+          '<button type="button" class="ghost js-copy" data-url="' + href + '">コピー</button></td></tr>';
+      });
+    });
+    $("url-table").innerHTML = html;
+    $("url-count").textContent = total + " / 141";
+  }
+
+  function fitPreviewFrame(frame) {
+    var host = document.querySelector(".admin-preview");
+    var el = frame || $("preview-frame");
+    if (!host || !el) return;
+    var scale = Math.min(host.clientWidth / 1920, host.clientHeight / 1080);
+    var x = (host.clientWidth - 1920 * scale) / 2;
+    var y = (host.clientHeight - 1080 * scale) / 2;
+    el.style.position = "absolute";
+    el.style.width = "1920px";
+    el.style.height = "1080px";
+    el.style.left = x + "px";
+    el.style.top = y + "px";
+    el.style.border = "0";
+    el.style.transformOrigin = "0 0";
+    el.style.transform = "scale(" + scale + ")";
+  }
+
+  function bindPreviewLoad(frame) {
+    frame.addEventListener("load", function () {
+      var settings = readForm();
+      var win = frame.contentWindow;
+      if (!win || win.location.href === "about:blank") return;
+      try {
+        win.postMessage({
+          source: "kikikuru-admin",
+          pref: settings.pref,
+          type: settings.type
+        }, global.location.origin);
+      } catch (err) {
+        /* ignore */
+      }
+    });
+  }
+
+  function updatePreview() {
+    var settings = readForm();
+    var url = displayUrl(settings);
+    var next = url + (url.indexOf("?") === -1 ? "?" : "&") + "_=" + Date.now();
+    var old = $("preview-frame");
+    var frame = document.createElement("iframe");
+    frame.id = "preview-frame";
+    frame.title = "キキクルプレビュー";
+    old.parentNode.replaceChild(frame, old);
+    fitPreviewFrame(frame);
+    bindPreviewLoad(frame);
+    frame.src = next;
+    renderUrlTable();
   }
 
   function boot() {
     fillPrefSelect();
-    if (!loadSettings()) writeForm(defaultSettings());
-    refreshUrl();
+    var saved = null;
+    try {
+      saved = JSON.parse(global.localStorage.getItem(global.DangerConfig.CONFIG.storageKey) || "null");
+    } catch (err) {
+      saved = null;
+    }
+    writeForm(Object.assign(defaultSettings(), saved || {}));
     updatePreview();
 
-    $("pref").addEventListener("change", function () {
-      applyPrefDefaults($("pref").value);
-      updatePreview();
-    });
-    $("type").addEventListener("change", updatePreview);
-    ["showTitle", "showPrefName", "showLegend", "showUpdated", "showHeader", "fitBounds"]
+    ["pref", "type", "showTitle", "showPrefName", "showLegend", "showUpdated", "showHeader", "showPanel"]
       .forEach(function (id) {
         $(id).addEventListener("change", updatePreview);
       });
-    ["lat", "lon", "zoom", "south", "west", "north", "east"].forEach(function (id) {
-      $(id).addEventListener("change", function () {
-        refreshUrl();
-        var view = {
-          lat: Number($("lat").value),
-          lon: Number($("lon").value),
-          zoom: Number($("zoom").value)
-        };
-        var frame = $("preview-frame").contentWindow;
-        if (frame) {
-          frame.postMessage({ source: "kikikuru-admin", view: view }, global.location.origin);
-        }
-      });
-    });
-
+    $("url-pref").addEventListener("input", renderUrlTable);
     $("preview").addEventListener("click", updatePreview);
-    $("copy-url").addEventListener("click", copyUrl);
-    $("save").addEventListener("click", saveSettings);
+    $("copy-url").addEventListener("click", function () {
+      copyText(displayUrl(readForm()));
+      toast("公開URLをコピーしました");
+    });
+    $("save").addEventListener("click", function () {
+      global.localStorage.setItem(global.DangerConfig.CONFIG.storageKey, JSON.stringify(readForm()));
+      toast("保存しました");
+    });
     $("load").addEventListener("click", function () {
-      loadSettings();
-      updatePreview();
+      try {
+        var raw = global.localStorage.getItem(global.DangerConfig.CONFIG.storageKey);
+        if (!raw) return toast("保存データがありません");
+        writeForm(Object.assign(defaultSettings(), JSON.parse(raw)));
+        updatePreview();
+        toast("読み込みました");
+      } catch (err) {
+        toast("読み込みに失敗しました");
+      }
     });
     $("reset").addEventListener("click", function () {
       writeForm(defaultSettings());
       updatePreview();
     });
-
-    global.addEventListener("message", function (event) {
-      if (event.origin !== global.location.origin) return;
-      if (!event.data || event.data.source !== "kikikuru-display" || !event.data.view) return;
-      $("lat").value = event.data.view.lat;
-      $("lon").value = event.data.view.lon;
-      $("zoom").value = event.data.view.zoom;
-      if (event.data.view.bounds) {
-        $("south").value = event.data.view.bounds[0];
-        $("west").value = event.data.view.bounds[1];
-        $("north").value = event.data.view.bounds[2];
-        $("east").value = event.data.view.bounds[3];
+    $("open-url").addEventListener("click", function () {
+      global.open(displayUrl(readForm()), "_blank");
+    });
+    $("url-table").addEventListener("click", function (event) {
+      var btn = event.target.closest(".js-copy");
+      if (btn) {
+        copyText(btn.getAttribute("data-url"));
+        toast("コピーしました");
+        return;
       }
-      refreshUrl();
+      var row = event.target.closest("tr[data-pref]");
+      if (!row) return;
+      $("pref").value = row.getAttribute("data-pref");
+      updatePreview();
+    });
+    global.addEventListener("resize", function () {
+      fitPreviewFrame();
     });
   }
 

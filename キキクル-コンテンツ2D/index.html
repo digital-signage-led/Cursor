@@ -5,37 +5,55 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="robots" content="noindex">
   <title>キキクル</title>
-  <style>
-    html.is-boot, html.is-boot body { background: #081018; }
-  </style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
   <link rel="stylesheet" href="css/danger.css">
 </head>
 <body>
-  <div id="stage">
-    <header class="header" id="header">
-      <div class="header-left">
-        <h1 class="content-title" id="content-title">土砂キキクル</h1>
-        <div class="pref-name" id="pref-name">大阪府</div>
+  <p id="boot-status" role="status">画面を準備しています</p>
+  <div id="app">
+    <article class="led-screen" id="stage">
+      <header class="led-header" id="header">
+        <div class="led-title-bar">
+          <h1 class="led-title" id="content-title">土砂キキクル</h1>
+        </div>
+        <div class="led-sub-bar">
+          <div class="led-stamp" id="updated-time">データ取得中</div>
+          <div class="led-point" id="pref-name">大阪府</div>
+          <div class="status is-sync" id="status">更新確認中</div>
+        </div>
+      </header>
+      <div class="led-body">
+        <div class="map-stage">
+          <div class="map-canvas" id="map" role="img" aria-label="キキクル地図"></div>
+        </div>
+        <aside class="info-panel" id="info-panel">
+          <div class="panel-area" id="panel-area">大阪府</div>
+          <p class="wx-hint" id="panel-hint">土砂キキクル</p>
+          <div class="section-label">危険度</div>
+          <div class="legend" id="legend"></div>
+          <div class="time-grid">
+            <div>
+              <span class="k">データ更新</span>
+              <strong id="panel-updated">—</strong>
+            </div>
+            <div>
+              <span class="k">対象</span>
+              <strong id="panel-pref">大阪府</strong>
+            </div>
+          </div>
+        </aside>
       </div>
-      <div class="header-right">
-        <div class="updated" id="updated-time">—</div>
-        <div class="status is-sync" id="status">更新確認中</div>
-      </div>
-    </header>
-    <div class="map-wrap">
-      <div id="map" role="img" aria-label="キキクル地図"></div>
-      <div class="legend" id="legend"></div>
-    </div>
+      <div class="map-attribution" id="attr">都道府県界 ／ キキクル © 気象庁</div>
+    </article>
   </div>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-  <script src="js/config.js"></script>
-  <script src="js/prefectures.js"></script>
-  <script src="js/kikikuru-api.js"></script>
-  <script src="js/map.js"></script>
-  <script src="js/app.js"></script>
+  <script src="vendor/leaflet/leaflet.js"></script>
+  <script src="js/config.js?v=pref5"></script>
+  <script src="js/prefectures.js?v=pref5"></script>
+  <script src="js/kikikuru-api.js?v=pref5"></script>
+  <script src="js/map.js?v=pref5"></script>
+  <script src="js/app.js?v=pref5"></script>
 </body>
 </html>

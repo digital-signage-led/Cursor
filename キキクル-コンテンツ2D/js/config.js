@@ -55,22 +55,22 @@
     layerSwapTimeoutMs: 4000,
     jmaRiskBase: "https://www.jma.go.jp/bosai/jmatile/data/risk",
     jmaTargetTimesPath: "targetTimes.json",
-    gsiTileUrl: "https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png",
-    fallbackTileUrl: "https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
-    gsiAttribution: "地理院タイル",
-    jmaAttribution: "気象庁キキクル",
-    tileMinZoom: 5,
-    tileMaxZoom: 12,
-    tileMaxNativeZoom: 11,
-    riskOpacity: 0.78,
+    prefGeoUrl: "data/japan-prefectures.geojson",
+    seaColor: "#6e9bb8",
+    jmaAttribution: "都道府県界 ／ キキクル © 気象庁",
+    tileMinZoom: 4,
+    tileMaxZoom: 10.5,
+    tileMaxNativeZoom: 6,
+    riskOpacity: 0.92,
     cachePrefix: "kikikuru:last:",
-    storageKey: "kikikuru:admin:settings",
+    storageKey: "kikikuru:admin:settings:v2",
     displayDefaults: Object.freeze({
       showTitle: true,
       showPrefName: true,
       showLegend: true,
       showUpdated: true,
-      showHeader: true
+      showHeader: true,
+      showPanel: true
     })
   });
 

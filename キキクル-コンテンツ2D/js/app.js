@@ -21,12 +21,6 @@
     return value !== "0" && value !== "false" && value !== "off";
   }
 
-  function num(params, key, fallback) {
-    if (!params.has(key)) return fallback;
-    var value = Number(params.get(key));
-    return isFinite(value) ? value : fallback;
-  }
-
   function readSettings() {
     var params = new URLSearchParams(global.location.search);
     if (params.get("studio") === "1") {
@@ -39,35 +33,18 @@
 
     var cfg = global.DangerConfig.CONFIG;
     var defaults = cfg.displayDefaults;
-    var pref = global.DangerPrefectures.getPrefecture(params.get("pref") || cfg.defaultPref);
+    var pref = global.DangerPrefectures.getPrefecture(params.get("pref") || params.get("prefecture") || cfg.defaultPref);
     var type = global.DangerConfig.getContentType(params.get("type") || cfg.defaultType);
-    var view = {
-      lat: num(params, "lat", pref.lat),
-      lon: num(params, "lon", pref.lon),
-      zoom: num(params, "zoom", pref.zoom),
-      bounds: pref.bounds
-    };
-
-    if (params.get("south") && params.get("west") && params.get("north") && params.get("east")) {
-      view.bounds = [
-        Number(params.get("south")),
-        Number(params.get("west")),
-        Number(params.get("north")),
-        Number(params.get("east"))
-      ];
-    }
 
     return {
       pref: pref,
       type: type,
-      view: view,
-      fitBounds: params.get("fit") === "1",
       showTitle: flag(params, "title", defaults.showTitle),
       showPrefName: flag(params, "prefName", defaults.showPrefName),
       showLegend: flag(params, "legend", defaults.showLegend),
       showUpdated: flag(params, "updated", defaults.showUpdated),
       showHeader: flag(params, "header", defaults.showHeader),
-      interactive: params.get("edit") === "1"
+      showPanel: flag(params, "panel", true)
     };
   }
 
@@ -78,7 +55,15 @@
     var scale = Math.min(global.innerWidth / cfg.stageWidth, global.innerHeight / cfg.stageHeight);
     var x = (global.innerWidth - cfg.stageWidth * scale) / 2;
     var y = (global.innerHeight - cfg.stageHeight * scale) / 2;
-    stage.style.transform = "translate(" + x + "px," + y + "px) scale(" + scale + ")";
+    stage.style.position = "absolute";
+    stage.style.left = "0";
+    stage.style.top = "0";
+    stage.style.transformOrigin = "0 0";
+    if (Math.abs(scale - 1) < 0.002 && Math.abs(x) < 1 && Math.abs(y) < 1) {
+      stage.style.transform = "none";
+    } else {
+      stage.style.transform = "translate(" + x + "px," + y + "px) scale(" + scale + ")";
+    }
   }
 
   function renderLegend() {
@@ -88,21 +73,26 @@
     var levels = global.DangerConfig.RISK_LEVELS;
     var i;
     for (i = 0; i < levels.length; i += 1) {
-      html += '<div class="legend-item">' +
-        '<span class="legend-swatch" style="background:' + levels[i].color + '"></span>' +
-        '<span class="legend-label">' + levels[i].label + "</span></div>";
+      html += '<div class="legend-step"><i style="background:' + levels[i].color + '"></i>' +
+        levels[i].label + "</div>";
     }
     box.innerHTML = html;
   }
 
   function applyChrome(settings) {
-    document.body.classList.toggle("hide-header", !settings.showHeader);
-    document.body.classList.toggle("hide-title", !settings.showTitle);
-    document.body.classList.toggle("hide-pref", !settings.showPrefName);
-    document.body.classList.toggle("hide-legend", !settings.showLegend);
-    document.body.classList.toggle("hide-updated", !settings.showUpdated);
-    $("content-title").textContent = settings.type.name;
+    var screen = $("stage");
+    screen.classList.toggle("is-header-off", !settings.showHeader);
+    screen.classList.toggle("is-title-off", !settings.showTitle);
+    screen.classList.toggle("is-pref-off", !settings.showPrefName);
+    screen.classList.toggle("is-legend-off", !settings.showLegend);
+    screen.classList.toggle("is-updated-off", !settings.showUpdated);
+    screen.classList.toggle("is-panel-off", !settings.showPanel);
+    $("info-panel").hidden = !settings.showPanel;
+    $("content-title").textContent = settings.pref.name + "｜" + settings.type.name;
     $("pref-name").textContent = settings.pref.name;
+    $("panel-area").textContent = settings.pref.name;
+    $("panel-hint").textContent = settings.type.name;
+    $("panel-pref").textContent = settings.pref.name;
     document.title = settings.type.name + "｜" + settings.pref.name;
   }
 
@@ -116,9 +106,9 @@
   function applySnapshot(snapshot) {
     if (!snapshot) return;
     state.snapshot = snapshot;
-    if ($("updated-time")) {
-      $("updated-time").textContent = snapshot.updatedLabel ? snapshot.updatedLabel + " 現在" : "—";
-    }
+    var label = snapshot.updatedLabel || "—";
+    if ($("updated-time")) $("updated-time").textContent = label === "—" ? "—" : label + "更新";
+    if ($("panel-updated")) $("panel-updated").textContent = label;
     if (!global.KikikuruApi.sameSnapshot(state.shownSnapshot, snapshot)) {
       global.DangerMap.setRiskTiles(snapshot.tileUrl);
       state.shownSnapshot = snapshot;
@@ -142,27 +132,6 @@
     });
   }
 
-  function startLoop() {
-    if (state.timer) clearInterval(state.timer);
-    state.timer = setInterval(function () {
-      refresh("auto");
-    }, global.DangerConfig.CONFIG.refreshMs);
-  }
-
-  function onStudioMessage(event) {
-    if (event.origin !== global.location.origin) return;
-    if (!event.data || event.data.source !== "kikikuru-admin") return;
-    if (event.data.view) {
-      global.DangerMap.applyView(event.data.view, false);
-    }
-    if (event.data.requestView) {
-      global.parent.postMessage({
-        source: "kikikuru-display",
-        view: global.DangerMap.getView()
-      }, global.location.origin);
-    }
-  }
-
   function boot() {
     var settings = readSettings();
     if (!settings) return;
@@ -171,38 +140,40 @@
     fitStage();
     renderLegend();
     applyChrome(settings);
-    global.DangerMap.create("map", settings.view);
-    if (settings.fitBounds) {
-      global.DangerMap.applyView(settings.view, true);
-    }
-    global.DangerMap.setInteractive(settings.interactive);
-    if (settings.interactive && global.DangerMap.onMove) {
-      global.DangerMap.onMove(function (view) {
-        if (global.parent && global.parent !== global) {
-          global.parent.postMessage({
-            source: "kikikuru-display",
-            view: view
-          }, global.location.origin);
-        }
-      });
-    }
 
-    var cached = global.KikikuruApi.getLastGood(settings.type.id);
-    if (cached) {
-      applySnapshot(cached);
+    global.DangerMap.create("map", settings.pref).then(function () {
+      var cached = global.KikikuruApi.getLastGood(settings.type.id);
+      if (cached) applySnapshot(cached);
       setStatus("sync", "更新確認中");
-    } else {
-      setStatus("sync", "更新確認中");
-    }
+      refresh("boot");
+      global.DangerMap.invalidate();
+    });
 
-    refresh("boot");
-    startLoop();
+    global.addEventListener("message", function (event) {
+      if (event.origin !== global.location.origin) return;
+      if (!event.data || event.data.source !== "kikikuru-admin") return;
+      if (event.data.pref) {
+        var next = global.DangerPrefectures.getPrefecture(event.data.pref);
+        state.settings.pref = next;
+        applyChrome(state.settings);
+        global.DangerMap.setPrefecture(next).then(function () {
+          if (state.snapshot) global.DangerMap.setRiskTiles(state.snapshot.tileUrl);
+        });
+      }
+      if (event.data.type) {
+        state.settings.type = global.DangerConfig.getContentType(event.data.type);
+        applyChrome(state.settings);
+        state.shownSnapshot = null;
+        refresh("boot");
+      }
+    });
+
+    state.timer = setInterval(function () { refresh("auto"); }, global.DangerConfig.CONFIG.refreshMs);
 
     global.addEventListener("resize", function () {
       fitStage();
       global.DangerMap.invalidate();
     });
-    global.addEventListener("message", onStudioMessage);
     document.documentElement.classList.remove("is-boot");
   }
 

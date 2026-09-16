@@ -1,58 +1,58 @@
 /**
- * 47都道府県の表示設定。県ごとのHTMLは作らない。
- * lat/lon/zoom は県全体が見える初期値。管理画面で微調整可能。
+ * 47都道府県。雨・レーダーの富山プレビューを正とする。
+ * 北海道のズーム感を維持し、小さい県だけ zoomBoost で少しアップ。
  */
 (function (global) {
   "use strict";
 
   var PREFECTURES = Object.freeze({
-    hokkaido: Object.freeze({ id: "hokkaido", name: "北海道", lat: 43.45, lon: 142.80, zoom: 7, bounds: [41.35, 139.40, 45.55, 145.82] }),
-    aomori: Object.freeze({ id: "aomori", name: "青森県", lat: 40.78, lon: 140.78, zoom: 8, bounds: [40.22, 139.50, 41.56, 141.68] }),
-    iwate: Object.freeze({ id: "iwate", name: "岩手県", lat: 39.60, lon: 141.35, zoom: 8, bounds: [38.75, 140.65, 40.45, 142.07] }),
-    miyagi: Object.freeze({ id: "miyagi", name: "宮城県", lat: 38.45, lon: 140.92, zoom: 8, bounds: [37.77, 140.27, 39.00, 141.68] }),
-    akita: Object.freeze({ id: "akita", name: "秋田県", lat: 39.72, lon: 140.22, zoom: 8, bounds: [38.87, 139.68, 40.51, 140.98] }),
-    yamagata: Object.freeze({ id: "yamagata", name: "山形県", lat: 38.45, lon: 140.10, zoom: 8, bounds: [37.73, 139.54, 39.21, 140.65] }),
-    fukushima: Object.freeze({ id: "fukushima", name: "福島県", lat: 37.40, lon: 140.20, zoom: 8, bounds: [36.79, 139.16, 37.98, 141.05] }),
-    ibaraki: Object.freeze({ id: "ibaraki", name: "茨城県", lat: 36.24, lon: 140.28, zoom: 9, bounds: [35.73, 139.69, 36.95, 140.85] }),
-    tochigi: Object.freeze({ id: "tochigi", name: "栃木県", lat: 36.68, lon: 139.82, zoom: 9, bounds: [36.20, 139.33, 37.15, 140.29] }),
-    gunma: Object.freeze({ id: "gunma", name: "群馬県", lat: 36.50, lon: 139.00, zoom: 9, bounds: [36.04, 138.40, 37.05, 139.62] }),
-    saitama: Object.freeze({ id: "saitama", name: "埼玉県", lat: 35.99, lon: 139.40, zoom: 9, bounds: [35.75, 138.71, 36.28, 139.90] }),
-    chiba: Object.freeze({ id: "chiba", name: "千葉県", lat: 35.50, lon: 140.12, zoom: 9, bounds: [34.90, 139.74, 36.10, 140.88] }),
-    tokyo: Object.freeze({ id: "tokyo", name: "東京都", lat: 35.69, lon: 139.40, zoom: 9, bounds: [35.50, 139.00, 35.90, 139.92] }),
-    kanagawa: Object.freeze({ id: "kanagawa", name: "神奈川県", lat: 35.42, lon: 139.34, zoom: 9, bounds: [35.13, 138.92, 35.67, 139.84] }),
-    niigata: Object.freeze({ id: "niigata", name: "新潟県", lat: 37.54, lon: 138.85, zoom: 8, bounds: [36.74, 137.64, 38.55, 139.89] }),
-    toyama: Object.freeze({ id: "toyama", name: "富山県", lat: 36.65, lon: 137.26, zoom: 9, bounds: [36.27, 136.77, 36.98, 137.76] }),
-    ishikawa: Object.freeze({ id: "ishikawa", name: "石川県", lat: 36.77, lon: 136.77, zoom: 8, bounds: [36.07, 136.24, 37.85, 137.36] }),
-    fukui: Object.freeze({ id: "fukui", name: "福井県", lat: 35.85, lon: 136.22, zoom: 8, bounds: [35.35, 135.45, 36.30, 136.83] }),
-    yamanashi: Object.freeze({ id: "yamanashi", name: "山梨県", lat: 35.61, lon: 138.61, zoom: 9, bounds: [35.17, 138.18, 35.97, 139.14] }),
-    nagano: Object.freeze({ id: "nagano", name: "長野県", lat: 36.15, lon: 138.05, zoom: 8, bounds: [35.20, 137.32, 37.02, 138.73] }),
-    gifu: Object.freeze({ id: "gifu", name: "岐阜県", lat: 35.78, lon: 137.05, zoom: 8, bounds: [35.13, 136.28, 36.46, 137.66] }),
-    shizuoka: Object.freeze({ id: "shizuoka", name: "静岡県", lat: 35.05, lon: 138.32, zoom: 8, bounds: [34.57, 137.47, 35.64, 139.18] }),
-    aichi: Object.freeze({ id: "aichi", name: "愛知県", lat: 35.05, lon: 137.10, zoom: 9, bounds: [34.57, 136.67, 35.42, 137.83] }),
-    mie: Object.freeze({ id: "mie", name: "三重県", lat: 34.51, lon: 136.38, zoom: 8, bounds: [33.72, 135.85, 35.26, 136.98] }),
-    shiga: Object.freeze({ id: "shiga", name: "滋賀県", lat: 35.22, lon: 136.14, zoom: 9, bounds: [34.79, 135.77, 35.70, 136.46] }),
-    kyoto: Object.freeze({ id: "kyoto", name: "京都府", lat: 35.25, lon: 135.45, zoom: 8, bounds: [34.71, 134.85, 35.78, 135.87] }),
-    osaka: Object.freeze({ id: "osaka", name: "大阪府", lat: 34.62, lon: 135.51, zoom: 9, bounds: [34.27, 135.09, 35.05, 135.75] }),
-    hyogo: Object.freeze({ id: "hyogo", name: "兵庫県", lat: 35.04, lon: 134.86, zoom: 8, bounds: [34.16, 134.25, 35.67, 135.47] }),
-    nara: Object.freeze({ id: "nara", name: "奈良県", lat: 34.30, lon: 135.87, zoom: 9, bounds: [33.86, 135.54, 34.78, 136.12] }),
-    wakayama: Object.freeze({ id: "wakayama", name: "和歌山県", lat: 33.91, lon: 135.43, zoom: 8, bounds: [33.45, 135.01, 34.38, 136.00] }),
-    tottori: Object.freeze({ id: "tottori", name: "鳥取県", lat: 35.36, lon: 133.85, zoom: 8, bounds: [35.05, 133.14, 35.62, 134.90] }),
-    shimane: Object.freeze({ id: "shimane", name: "島根県", lat: 35.07, lon: 132.55, zoom: 8, bounds: [34.31, 131.67, 36.37, 133.43] }),
-    okayama: Object.freeze({ id: "okayama", name: "岡山県", lat: 34.86, lon: 133.82, zoom: 9, bounds: [34.29, 133.27, 35.35, 134.42] }),
-    hiroshima: Object.freeze({ id: "hiroshima", name: "広島県", lat: 34.60, lon: 132.75, zoom: 8, bounds: [34.08, 132.03, 35.10, 133.28] }),
-    yamaguchi: Object.freeze({ id: "yamaguchi", name: "山口県", lat: 34.23, lon: 131.57, zoom: 8, bounds: [33.72, 130.77, 34.80, 132.24] }),
-    tokushima: Object.freeze({ id: "tokushima", name: "徳島県", lat: 33.92, lon: 134.32, zoom: 9, bounds: [33.54, 133.66, 34.25, 134.82] }),
-    kagawa: Object.freeze({ id: "kagawa", name: "香川県", lat: 34.24, lon: 133.97, zoom: 9, bounds: [34.04, 133.45, 34.56, 134.45] }),
-    ehime: Object.freeze({ id: "ehime", name: "愛媛県", lat: 33.62, lon: 132.85, zoom: 8, bounds: [32.91, 132.04, 34.30, 133.69] }),
-    kochi: Object.freeze({ id: "kochi", name: "高知県", lat: 33.43, lon: 133.37, zoom: 8, bounds: [32.70, 132.48, 33.88, 134.32] }),
-    fukuoka: Object.freeze({ id: "fukuoka", name: "福岡県", lat: 33.52, lon: 130.64, zoom: 9, bounds: [33.06, 130.03, 33.88, 131.19] }),
-    saga: Object.freeze({ id: "saga", name: "佐賀県", lat: 33.26, lon: 130.10, zoom: 9, bounds: [32.95, 129.86, 33.62, 130.54] }),
-    nagasaki: Object.freeze({ id: "nagasaki", name: "長崎県", lat: 33.10, lon: 129.75, zoom: 8, bounds: [32.00, 128.10, 34.70, 130.40] }),
-    kumamoto: Object.freeze({ id: "kumamoto", name: "熊本県", lat: 32.65, lon: 130.75, zoom: 8, bounds: [32.09, 130.14, 33.20, 131.13] }),
-    oita: Object.freeze({ id: "oita", name: "大分県", lat: 33.20, lon: 131.43, zoom: 8, bounds: [32.72, 130.83, 33.74, 132.00] }),
-    miyazaki: Object.freeze({ id: "miyazaki", name: "宮崎県", lat: 32.10, lon: 131.30, zoom: 8, bounds: [31.36, 130.70, 32.83, 131.88] }),
-    kagoshima: Object.freeze({ id: "kagoshima", name: "鹿児島県", lat: 31.56, lon: 130.55, zoom: 8, bounds: [30.20, 129.40, 32.30, 131.08] }),
-    okinawa: Object.freeze({ id: "okinawa", name: "沖縄県", lat: 26.50, lon: 127.90, zoom: 8, bounds: [24.04, 122.93, 27.90, 131.33] })
+    hokkaido: Object.freeze({ id: "hokkaido", code: "01", name: "北海道", lat: 43.45, lon: 142.85, zoom: 6.5, zoomBoost: 0, bounds: { north: 45.55, south: 41.35, east: 145.82, west: 139.40 } }),
+    aomori: Object.freeze({ id: "aomori", code: "02", name: "青森県", lat: 40.82, lon: 140.74, zoom: 8.2, zoomBoost: 0, bounds: { north: 41.56, south: 40.22, east: 141.68, west: 139.50 } }),
+    iwate: Object.freeze({ id: "iwate", code: "03", name: "岩手県", lat: 39.70, lon: 141.15, zoom: 8.0, zoomBoost: 0, bounds: { north: 40.45, south: 38.75, east: 142.07, west: 140.65 } }),
+    miyagi: Object.freeze({ id: "miyagi", code: "04", name: "宮城県", lat: 38.27, lon: 140.87, zoom: 8.4, zoomBoost: 0, bounds: { north: 39.00, south: 37.77, east: 141.68, west: 140.27 } }),
+    akita: Object.freeze({ id: "akita", code: "05", name: "秋田県", lat: 39.72, lon: 140.10, zoom: 8.1, zoomBoost: 0, bounds: { north: 40.51, south: 38.87, east: 140.98, west: 139.68 } }),
+    yamagata: Object.freeze({ id: "yamagata", code: "06", name: "山形県", lat: 38.24, lon: 140.36, zoom: 8.3, zoomBoost: 0, bounds: { north: 39.21, south: 37.73, east: 140.65, west: 139.54 } }),
+    fukushima: Object.freeze({ id: "fukushima", code: "07", name: "福島県", lat: 37.45, lon: 140.20, zoom: 8.0, zoomBoost: 0, bounds: { north: 37.98, south: 36.79, east: 141.05, west: 139.16 } }),
+    ibaraki: Object.freeze({ id: "ibaraki", code: "08", name: "茨城県", lat: 36.34, lon: 140.45, zoom: 8.5, zoomBoost: 0, bounds: { north: 36.95, south: 35.73, east: 140.85, west: 139.69 } }),
+    tochigi: Object.freeze({ id: "tochigi", code: "09", name: "栃木県", lat: 36.57, lon: 139.88, zoom: 9.3, zoomBoost: 0.9, bounds: { north: 37.02, south: 36.32, east: 140.16, west: 139.45 } }),
+    gunma: Object.freeze({ id: "gunma", code: "10", name: "群馬県", lat: 36.39, lon: 139.06, zoom: 8.5, zoomBoost: 0, bounds: { north: 37.05, south: 36.04, east: 139.62, west: 138.40 } }),
+    saitama: Object.freeze({ id: "saitama", code: "11", name: "埼玉県", lat: 35.98, lon: 139.42, zoom: 8.8, zoomBoost: 0, bounds: { north: 36.28, south: 35.75, east: 139.90, west: 138.71 } }),
+    chiba: Object.freeze({ id: "chiba", code: "12", name: "千葉県", lat: 35.50, lon: 140.12, zoom: 8.6, zoomBoost: 0, bounds: { north: 36.10, south: 34.90, east: 140.88, west: 139.74 } }),
+    tokyo: Object.freeze({ id: "tokyo", code: "13", name: "東京都", lat: 35.69, lon: 139.69, zoom: 10.0, zoomBoost: 1.5, bounds: { north: 35.90, south: 35.50, east: 139.92, west: 139.00 } }),
+    kanagawa: Object.freeze({ id: "kanagawa", code: "14", name: "神奈川県", lat: 35.45, lon: 139.34, zoom: 9.4, zoomBoost: 0.9, bounds: { north: 35.67, south: 35.13, east: 139.84, west: 138.92 } }),
+    niigata: Object.freeze({ id: "niigata", code: "15", name: "新潟県", lat: 37.50, lon: 138.85, zoom: 7.6, zoomBoost: 0, bounds: { north: 38.55, south: 36.74, east: 139.89, west: 137.64 } }),
+    toyama: Object.freeze({ id: "toyama", code: "16", name: "富山県", lat: 36.65, lon: 137.21, zoom: 9.4, zoomBoost: 0.9, bounds: { north: 36.92, south: 36.35, east: 137.62, west: 136.85 } }),
+    ishikawa: Object.freeze({ id: "ishikawa", code: "17", name: "石川県", lat: 36.80, lon: 136.80, zoom: 8.0, zoomBoost: 0, bounds: { north: 37.85, south: 36.07, east: 137.36, west: 136.24 } }),
+    fukui: Object.freeze({ id: "fukui", code: "18", name: "福井県", lat: 35.85, lon: 136.22, zoom: 8.4, zoomBoost: 0, bounds: { north: 36.30, south: 35.35, east: 136.83, west: 135.45 } }),
+    yamanashi: Object.freeze({ id: "yamanashi", code: "19", name: "山梨県", lat: 35.66, lon: 138.57, zoom: 9.0, zoomBoost: 0.5, bounds: { north: 35.97, south: 35.17, east: 139.14, west: 138.18 } }),
+    nagano: Object.freeze({ id: "nagano", code: "20", name: "長野県", lat: 36.15, lon: 138.10, zoom: 7.8, zoomBoost: 0, bounds: { north: 37.02, south: 35.20, east: 138.73, west: 137.32 } }),
+    gifu: Object.freeze({ id: "gifu", code: "21", name: "岐阜県", lat: 35.80, lon: 137.03, zoom: 8.0, zoomBoost: 0, bounds: { north: 36.46, south: 35.13, east: 137.66, west: 136.28 } }),
+    shizuoka: Object.freeze({ id: "shizuoka", code: "22", name: "静岡県", lat: 35.05, lon: 138.38, zoom: 8.2, zoomBoost: 0, bounds: { north: 35.64, south: 34.57, east: 139.18, west: 137.47 } }),
+    aichi: Object.freeze({ id: "aichi", code: "23", name: "愛知県", lat: 35.05, lon: 137.15, zoom: 8.6, zoomBoost: 0, bounds: { north: 35.42, south: 34.57, east: 137.83, west: 136.67 } }),
+    mie: Object.freeze({ id: "mie", code: "24", name: "三重県", lat: 34.50, lon: 136.40, zoom: 8.0, zoomBoost: 0, bounds: { north: 35.26, south: 33.72, east: 136.98, west: 135.85 } }),
+    shiga: Object.freeze({ id: "shiga", code: "25", name: "滋賀県", lat: 35.20, lon: 136.10, zoom: 9.0, zoomBoost: 0.5, bounds: { north: 35.70, south: 34.79, east: 136.46, west: 135.77 } }),
+    kyoto: Object.freeze({ id: "kyoto", code: "26", name: "京都府", lat: 35.25, lon: 135.50, zoom: 8.4, zoomBoost: 0, bounds: { north: 35.78, south: 34.71, east: 135.87, west: 134.85 } }),
+    osaka: Object.freeze({ id: "osaka", code: "27", name: "大阪府", lat: 34.69, lon: 135.50, zoom: 10.0, zoomBoost: 1.5, bounds: { north: 35.05, south: 34.27, east: 135.75, west: 135.09 } }),
+    hyogo: Object.freeze({ id: "hyogo", code: "28", name: "兵庫県", lat: 35.00, lon: 134.85, zoom: 8.2, zoomBoost: 0, bounds: { north: 35.67, south: 34.16, east: 135.47, west: 134.25 } }),
+    nara: Object.freeze({ id: "nara", code: "29", name: "奈良県", lat: 34.30, lon: 135.85, zoom: 8.8, zoomBoost: 0.3, bounds: { north: 34.78, south: 33.86, east: 136.12, west: 135.54 } }),
+    wakayama: Object.freeze({ id: "wakayama", code: "30", name: "和歌山県", lat: 33.95, lon: 135.45, zoom: 8.4, zoomBoost: 0, bounds: { north: 34.38, south: 33.45, east: 136.00, west: 135.01 } }),
+    tottori: Object.freeze({ id: "tottori", code: "31", name: "鳥取県", lat: 35.35, lon: 134.00, zoom: 8.6, zoomBoost: 0, bounds: { north: 35.62, south: 35.05, east: 134.90, west: 133.14 } }),
+    shimane: Object.freeze({ id: "shimane", code: "32", name: "島根県", lat: 35.10, lon: 132.55, zoom: 7.8, zoomBoost: 0, bounds: { north: 36.37, south: 34.31, east: 133.43, west: 131.67 } }),
+    okayama: Object.freeze({ id: "okayama", code: "33", name: "岡山県", lat: 34.85, lon: 133.85, zoom: 8.5, zoomBoost: 0, bounds: { north: 35.35, south: 34.29, east: 134.42, west: 133.27 } }),
+    hiroshima: Object.freeze({ id: "hiroshima", code: "34", name: "広島県", lat: 34.55, lon: 132.65, zoom: 8.3, zoomBoost: 0, bounds: { north: 35.10, south: 34.08, east: 133.28, west: 132.03 } }),
+    yamaguchi: Object.freeze({ id: "yamaguchi", code: "35", name: "山口県", lat: 34.25, lon: 131.50, zoom: 8.4, zoomBoost: 0, bounds: { north: 34.80, south: 33.72, east: 132.24, west: 130.77 } }),
+    tokushima: Object.freeze({ id: "tokushima", code: "36", name: "徳島県", lat: 33.92, lon: 134.25, zoom: 8.8, zoomBoost: 0.3, bounds: { north: 34.25, south: 33.54, east: 134.82, west: 133.66 } }),
+    kagawa: Object.freeze({ id: "kagawa", code: "37", name: "香川県", lat: 34.30, lon: 133.95, zoom: 9.4, zoomBoost: 0.9, bounds: { north: 34.56, south: 34.04, east: 134.45, west: 133.45 } }),
+    ehime: Object.freeze({ id: "ehime", code: "38", name: "愛媛県", lat: 33.65, lon: 132.85, zoom: 8.2, zoomBoost: 0, bounds: { north: 34.30, south: 32.91, east: 133.69, west: 132.04 } }),
+    kochi: Object.freeze({ id: "kochi", code: "39", name: "高知県", lat: 33.45, lon: 133.40, zoom: 8.2, zoomBoost: 0, bounds: { north: 33.88, south: 32.70, east: 134.32, west: 132.48 } }),
+    fukuoka: Object.freeze({ id: "fukuoka", code: "40", name: "福岡県", lat: 33.50, lon: 130.60, zoom: 8.6, zoomBoost: 0, bounds: { north: 33.88, south: 33.06, east: 131.19, west: 130.03 } }),
+    saga: Object.freeze({ id: "saga", code: "41", name: "佐賀県", lat: 33.25, lon: 130.20, zoom: 9.2, zoomBoost: 0.7, bounds: { north: 33.62, south: 32.95, east: 130.54, west: 129.86 } }),
+    nagasaki: Object.freeze({ id: "nagasaki", code: "42", name: "長崎県", lat: 33.10, lon: 129.70, zoom: 8.0, zoomBoost: 0, bounds: { north: 34.70, south: 32.00, east: 130.40, west: 128.10 } }),
+    kumamoto: Object.freeze({ id: "kumamoto", code: "43", name: "熊本県", lat: 32.70, lon: 130.70, zoom: 8.4, zoomBoost: 0, bounds: { north: 33.20, south: 32.09, east: 131.13, west: 130.14 } }),
+    oita: Object.freeze({ id: "oita", code: "44", name: "大分県", lat: 33.20, lon: 131.50, zoom: 8.5, zoomBoost: 0, bounds: { north: 33.74, south: 32.72, east: 132.00, west: 130.83 } }),
+    miyazaki: Object.freeze({ id: "miyazaki", code: "45", name: "宮崎県", lat: 32.10, lon: 131.30, zoom: 8.2, zoomBoost: 0, bounds: { north: 32.83, south: 31.36, east: 131.88, west: 130.70 } }),
+    kagoshima: Object.freeze({ id: "kagoshima", code: "46", name: "鹿児島県", lat: 31.56, lon: 130.56, zoom: 8.0, zoomBoost: 0, bounds: { north: 32.30, south: 31.00, east: 131.08, west: 129.80 } }),
+    okinawa: Object.freeze({ id: "okinawa", code: "47", name: "沖縄県", lat: 26.33, lon: 127.80, zoom: 8.8, zoomBoost: 0.3, bounds: { north: 26.90, south: 26.05, east: 128.35, west: 127.55 } })
   });
 
   var PREF_ORDER = Object.freeze([
@@ -67,108 +67,15 @@
     "okinawa"
   ]);
 
-  var NAME_ALIASES = Object.freeze({
-    "北海道": "hokkaido",
-    "青森": "aomori",
-    "青森県": "aomori",
-    "岩手": "iwate",
-    "岩手県": "iwate",
-    "宮城": "miyagi",
-    "宮城県": "miyagi",
-    "秋田": "akita",
-    "秋田県": "akita",
-    "山形": "yamagata",
-    "山形県": "yamagata",
-    "福島": "fukushima",
-    "福島県": "fukushima",
-    "茨城": "ibaraki",
-    "茨城県": "ibaraki",
-    "栃木": "tochigi",
-    "栃木県": "tochigi",
-    "群馬": "gunma",
-    "群馬県": "gunma",
-    "埼玉": "saitama",
-    "埼玉県": "saitama",
-    "千葉": "chiba",
-    "千葉県": "chiba",
-    "東京": "tokyo",
-    "東京都": "tokyo",
-    "神奈川": "kanagawa",
-    "神奈川県": "kanagawa",
-    "新潟": "niigata",
-    "新潟県": "niigata",
-    "富山": "toyama",
-    "富山県": "toyama",
-    "石川": "ishikawa",
-    "石川県": "ishikawa",
-    "福井": "fukui",
-    "福井県": "fukui",
-    "山梨": "yamanashi",
-    "山梨県": "yamanashi",
-    "長野": "nagano",
-    "長野県": "nagano",
-    "岐阜": "gifu",
-    "岐阜県": "gifu",
-    "静岡": "shizuoka",
-    "静岡県": "shizuoka",
-    "愛知": "aichi",
-    "愛知県": "aichi",
-    "三重": "mie",
-    "三重県": "mie",
-    "滋賀": "shiga",
-    "滋賀県": "shiga",
-    "京都": "kyoto",
-    "京都府": "kyoto",
-    "大阪": "osaka",
-    "大阪府": "osaka",
-    "兵庫": "hyogo",
-    "兵庫県": "hyogo",
-    "奈良": "nara",
-    "奈良県": "nara",
-    "和歌山": "wakayama",
-    "和歌山県": "wakayama",
-    "鳥取": "tottori",
-    "鳥取県": "tottori",
-    "島根": "shimane",
-    "島根県": "shimane",
-    "岡山": "okayama",
-    "岡山県": "okayama",
-    "広島": "hiroshima",
-    "広島県": "hiroshima",
-    "山口": "yamaguchi",
-    "山口県": "yamaguchi",
-    "徳島": "tokushima",
-    "徳島県": "tokushima",
-    "香川": "kagawa",
-    "香川県": "kagawa",
-    "愛媛": "ehime",
-    "愛媛県": "ehime",
-    "高知": "kochi",
-    "高知県": "kochi",
-    "福岡": "fukuoka",
-    "福岡県": "fukuoka",
-    "佐賀": "saga",
-    "佐賀県": "saga",
-    "長崎": "nagasaki",
-    "長崎県": "nagasaki",
-    "熊本": "kumamoto",
-    "熊本県": "kumamoto",
-    "大分": "oita",
-    "大分県": "oita",
-    "宮崎": "miyazaki",
-    "宮崎県": "miyazaki",
-    "鹿児島": "kagoshima",
-    "鹿児島県": "kagoshima",
-    "沖縄": "okinawa",
-    "沖縄県": "okinawa"
-  });
-
   function normalizePref(value) {
-    var raw = String(value || "").trim();
-    if (!raw) return global.DangerConfig.CONFIG.defaultPref;
-    var lower = raw.toLowerCase();
-    if (PREFECTURES[lower]) return lower;
-    if (NAME_ALIASES[raw]) return NAME_ALIASES[raw];
+    var raw = String(value || "").trim().toLowerCase();
+    if (PREFECTURES[raw]) return raw;
+    var list = listPrefectures();
+    var i;
+    for (i = 0; i < list.length; i += 1) {
+      if (list[i].code === String(value).padStart(2, "0")) return list[i].id;
+      if (list[i].name === value || list[i].name.replace(/[都道府県]/g, "") === String(value)) return list[i].id;
+    }
     return global.DangerConfig.CONFIG.defaultPref;
   }
 
@@ -178,10 +85,13 @@
 
   function listPrefectures() {
     var list = [];
-    for (var i = 0; i < PREF_ORDER.length; i += 1) {
-      list.push(PREFECTURES[PREF_ORDER[i]]);
-    }
+    var i;
+    for (i = 0; i < PREF_ORDER.length; i += 1) list.push(PREFECTURES[PREF_ORDER[i]]);
     return list;
+  }
+
+  function prefMaxZoom(pref) {
+    return Math.min(10.5, 8.5 + (Number(pref && pref.zoomBoost) || 0));
   }
 
   global.DangerPrefectures = {
@@ -189,6 +99,7 @@
     PREF_ORDER: PREF_ORDER,
     normalizePref: normalizePref,
     getPrefecture: getPrefecture,
-    listPrefectures: listPrefectures
+    listPrefectures: listPrefectures,
+    prefMaxZoom: prefMaxZoom
   };
 })(window);
