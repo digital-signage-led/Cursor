@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>③ 危険度 管理画面</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/admin.css">
+</head>
+<body>
+  <div class="admin">
+    <aside class="panel">
+      <h1>キキクル管理</h1>
+      <p class="genre">③ 危険度</p>
+
+      <form id="admin-form">
+        <section class="section">
+          <h2>基本設定</h2>
+          <label>都道府県
+            <select id="pref" name="pref"></select>
+          </label>
+          <label>コンテンツ種類
+            <select id="type" name="type">
+              <option value="land">土砂キキクル</option>
+              <option value="inundation">浸水キキクル</option>
+              <option value="flood">洪水キキクル</option>
+            </select>
+          </label>
+        </section>
+
+        <section class="section checks">
+          <h2>表示設定</h2>
+          <label><input type="checkbox" id="showTitle" checked> タイトル表示</label>
+          <label><input type="checkbox" id="showPrefName" checked> 都道府県名表示</label>
+          <label><input type="checkbox" id="showLegend" checked> 凡例表示</label>
+          <label><input type="checkbox" id="showUpdated" checked> 更新時刻表示</label>
+          <label><input type="checkbox" id="showHeader" checked> ヘッダー表示</label>
+          <label><input type="checkbox" id="fitBounds"> 都道府県の表示範囲に合わせる</label>
+        </section>
+
+        <section class="section">
+          <h2>地図中心・ズーム</h2>
+          <div class="row">
+            <label>緯度
+              <input type="number" id="lat" step="0.0001">
+            </label>
+            <label>経度
+              <input type="number" id="lon" step="0.0001">
+            </label>
+            <label>ズーム
+              <input type="number" id="zoom" min="5" max="12" step="0.1">
+            </label>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2>地図表示範囲</h2>
+          <div class="row">
+            <label>南
+              <input type="number" id="south" step="0.0001">
+            </label>
+            <label>西
+              <input type="number" id="west" step="0.0001">
+            </label>
+            <label>北
+              <input type="number" id="north" step="0.0001">
+            </label>
+          </div>
+          <label>東
+            <input type="number" id="east" step="0.0001">
+          </label>
+        </section>
+
+        <section class="section">
+          <h2>運用</h2>
+          <div class="actions">
+            <button type="button" class="primary" id="preview">プレビュー</button>
+            <button type="button" id="copy-url">公開URLコピー</button>
+            <button type="button" id="save">設定保存</button>
+            <button type="button" id="load">設定読込</button>
+            <button type="button" class="danger" id="reset">初期値に戻す</button>
+          </div>
+          <label>公開URL
+            <textarea id="public-url" class="url-box" readonly></textarea>
+          </label>
+        </section>
+      </form>
+      <p class="note">危険度の色と意味は気象庁の公式表現に固定しています。管理画面からは変更できません。公開画面は表示専用で、この管理用コードは読み込みません。</p>
+    </aside>
+    <main class="preview-wrap">
+      <h2>プレビュー</h2>
+      <iframe id="preview-frame" title="キキクルプレビュー"></iframe>
+    </main>
+  </div>
+  <script src="../js/config.js"></script>
+  <script src="../js/prefectures.js"></script>
+  <script src="../js/admin.js"></script>
+</body>
+</html>
