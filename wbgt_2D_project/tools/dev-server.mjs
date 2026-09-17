@@ -30,8 +30,10 @@ function calcWbgt(row) {
 }
 
 function fmtTime(s) {
-  const m = String(s || '').match(/(\d{1,2}):(\d{2})/);
-  return m ? String(m[1]).padStart(2, '0') + ':' + m[2] : '';
+  const m = String(s || '').match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})\s+(\d{1,2}):(\d{2})/);
+  if (m) return String(m[4]).padStart(2, '0') + ':00';
+  const t = String(s || '').match(/(\d{1,2}):(\d{2})/);
+  return t ? String(t[1]).padStart(2, '0') + ':00' : '';
 }
 
 function dateRange() {
@@ -113,6 +115,69 @@ async function fetchWbgt(point) {
   }
 }
 
+function prefectureCodeFromArea(areaCode) {
+  const s = String(areaCode);
+  return s.length >= 2 ? s.slice(0, 2) + '0000' : s;
+}
+
+function class10FromArea(areaCode) {
+  const s = String(areaCode);
+  return s.length >= 6 ? s.substring(0, 2) + '0030' : s;
+}
+
+function findAreaItem(items, code) {
+  if (!items) return null;
+  for (const it of items) {
+    if (String(it.areaCode) === String(code)) return it;
+  }
+  return null;
+}
+
+function kindToRainLevel(k) {
+  if (!k) return 0;
+  const st = String(k.status || '');
+  if (st.includes('なし')) return 1;
+  if (st.includes('解除') && !st.includes('継続')) return 0;
+  const blob = JSON.stringify(k);
+  if (blob.includes('大雨特別') || blob.includes('レベル５') || blob.includes('レベル5')) return 5;
+  if (blob.includes('大雨危険') || blob.includes('レベル４') || blob.includes('レベル4')) return 4;
+  if (blob.includes('大雨警報') && !blob.includes('注意')) return 3;
+  if (blob.includes('大雨注意')) return 2;
+  const c = String(k.code || '');
+  if (!c) return 0;
+  if (c === '33') return 5;
+  if (c === '39' || c === '40' || c === '41' || c === '42') return 4;
+  if (c === '03') return 3;
+  if (c === '10') return 2;
+  return 0;
+}
+
+function kindsToRainLevel(kinds) {
+  if (!kinds || !kinds.length) return 1;
+  let maxLevel = 1;
+  for (const k of kinds) maxLevel = Math.max(maxLevel, kindToRainLevel(k));
+  return maxLevel;
+}
+
+async function fetchRainLevel(areaCode) {
+  const code = String(areaCode);
+  const pref = prefectureCodeFromArea(code);
+  const res = await fetch(`https://www.jma.go.jp/bosai/warning/data/r8/${pref}.json`);
+  if (!res.ok) throw new Error(`jma r8 ${res.status}`);
+  const list = await res.json();
+  if (!list.length || !list[0].warning) throw new Error('jma r8 empty');
+  const head = list[0];
+  const w = head.warning;
+  let maxLevel = 1;
+  const item20 = findAreaItem(w.class20Items, code);
+  if (item20) maxLevel = Math.max(maxLevel, kindsToRainLevel(item20.kinds));
+  if (maxLevel <= 1) {
+    const item10 = findAreaItem(w.class10Items, class10FromArea(code));
+    if (item10) maxLevel = Math.max(maxLevel, kindsToRainLevel(item10.kinds));
+  }
+  return { level: maxLevel, updated: head.reportDatetime || '' };
+}
+
 function contentType(file) {
   const ext = path.extname(file).toLowerCase();
   return ({
@@ -135,6 +200,13 @@ const server = http.createServer(async (req, res) => {
     if (u.pathname === '/api/wbgt') {
       const point = u.searchParams.get('point') || '620780';
       const data = await fetchWbgt(point);
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify(data));
+      return;
+    }
+    if (u.pathname === '/api/rain') {
+      const area = u.searchParams.get('area') || '2710000';
+      const data = await fetchRainLevel(area);
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*' });
       res.end(JSON.stringify(data));
       return;
@@ -162,7 +234,9 @@ function listen(port) {
   server.listen(port, '127.0.0.1', () => {
     const p = server.address().port;
     console.log(`WBGT dev server: http://127.0.0.1:${p}/`);
-    console.log(`WBGT API test: http://127.0.0.1:${p}/api/wbgt?point=620780`);
+    console.log(`WBGT API test: http://127.0.0.1:${p}/api/wbgt?point=511060`);
+    console.log(`Rain API test: http://127.0.0.1:${p}/api/rain?area=2310000`);
+    console.log(`Setup (nationwide): http://127.0.0.1:${p}/setup.html`);
   }).on('error', (e) => {
     if (e.code === 'EADDRINUSE' && port !== 0) listen(0);
     else throw e;

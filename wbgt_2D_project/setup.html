@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>会場テンプレート / URL発行 — WBGT・大雨</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#0e0e12;color:#e8e8e8;font-family:'Segoe UI','Noto Sans JP',sans-serif;padding:20px 24px 48px;max-width:960px;margin:0 auto;}
+h1{font-size:22px;font-weight:900;margin-bottom:6px;}
+.lead{font-size:13px;color:#aaa;margin-bottom:20px;line-height:1.65;}
+.lead a{color:#4fc3f7;}
+.panel{background:#18181f;border:1px solid #333;border-radius:12px;padding:20px 22px;margin-bottom:20px;}
+.panel h2{font-size:14px;font-weight:900;color:#ccc;margin-bottom:14px;letter-spacing:0.02em;}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;}
+@media(max-width:640px){.grid{grid-template-columns:1fr;}}
+.field{display:flex;flex-direction:column;gap:5px;}
+.field.full{grid-column:1/-1;}
+.field label{font-size:12px;font-weight:700;color:#999;}
+.field input,.field select{
+  background:#121218;color:#eee;border:1px solid #444;border-radius:8px;
+  padding:9px 11px;font-size:14px;font-family:inherit;width:100%;
+}
+.field input:focus,.field select:focus{outline:none;border-color:#4fc3f7;}
+.hint{font-size:11px;color:#666;line-height:1.45;}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px;}
+.chips button{
+  background:#252530;color:#ddd;border:1px solid #555;border-radius:8px;
+  padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;
+}
+.chips button:hover,.chips button.on{border-color:#4fc3f7;color:#4fc3f7;}
+.url-box{
+  background:#0a0a0f;border:2px solid #4fc3f7;border-radius:10px;padding:14px 16px;
+  word-break:break-all;font-size:13px;line-height:1.55;color:#e0f4ff;min-height:3.2em;
+}
+.url-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;}
+.url-actions button,.url-actions a.btn{
+  background:#4fc3f7;color:#111;border:none;border-radius:8px;
+  padding:10px 18px;font-size:13px;font-weight:900;cursor:pointer;font-family:inherit;
+  text-decoration:none;display:inline-block;
+}
+.url-actions a.secondary,.url-actions button.secondary{
+  background:#2a2a35;color:#e8e8e8;border:1px solid #555;
+}
+.res-badge{
+  display:inline-block;background:#2a2a35;border:1px solid #444;border-radius:6px;
+  padding:4px 10px;font-size:12px;font-weight:700;margin-top:8px;color:#aaa;
+}
+.copied{font-size:12px;color:#6fcf97;margin-left:8px;opacity:0;transition:opacity .2s;}
+.copied.show{opacity:1;}
+</style>
+</head>
+<body>
+<h1>会場テンプレート / URL発行</h1>
+<p class="lead">
+  全国47都道府県の庁所在地テンプレートから会場を選び、サイネージ用URLを発行します。<br>
+  見た目（デザイン）は共通。変わるのは会場名・観測地点・警報エリアだけです。<br>
+  <a href="index.html">本番画面</a> ·
+  <a href="preview/index.html">プレビュー一覧</a> ·
+  <a href="index.html?demo=1">デモ</a>
+</p>
+
+<div class="panel">
+  <h2>1. 会場を選ぶ（全国テンプレート）</h2>
+  <div class="grid">
+    <div class="field">
+      <label for="pref">都道府県</label>
+      <select id="pref"></select>
+    </div>
+    <div class="field">
+      <label for="city">都市（テンプレート）</label>
+      <select id="city"></select>
+    </div>
+  </div>
+  <p class="hint" style="margin-top:10px;">一覧にない市町村は、下のフォームで point / area を手入力してください（環境省地点番号・気象庁市町村コード）。</p>
+</div>
+
+<div class="panel">
+  <h2>2. LED / 画面サイズ</h2>
+  <div class="chips" id="ledChips"></div>
+  <div class="grid" style="margin-top:12px;">
+    <div class="field">
+      <label for="pitch">LEDピッチ</label>
+      <select id="pitch">
+        <option value="P3.47">P3.47</option>
+        <option value="P2.87">P2.87</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="inch">インチ</label>
+      <select id="inch">
+        <option value="75">75インチ</option>
+        <option value="100" selected>100インチ</option>
+        <option value="125">125インチ</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="sign_w">幅(px) ※LED Cloud等</label>
+      <input type="number" id="sign_w" min="0" placeholder="空欄=ピッチ表 / 例:1920">
+    </div>
+    <div class="field">
+      <label for="sign_h">高さ(px)</label>
+      <input type="number" id="sign_h" min="0" placeholder="空欄=ピッチ表 / 例:1080">
+    </div>
+  </div>
+</div>
+
+<form id="form" class="panel" autocomplete="off">
+  <h2>3. 詳細（自動入力・上書き可）</h2>
+  <div class="grid">
+    <div class="field full">
+      <label for="site">現場名（左上表示）</label>
+      <input type="text" id="site" placeholder="例: 愛知県名古屋市">
+    </div>
+    <div class="field">
+      <label for="site_id">テンプレートID</label>
+      <input type="text" id="site_id" placeholder="nagoya" readonly>
+    </div>
+    <div class="field">
+      <label for="point">WBGT地点番号</label>
+      <input type="text" id="point" inputmode="numeric" placeholder="511060">
+      <span class="hint">環境省6桁（末尾0付き）</span>
+    </div>
+    <div class="field">
+      <label for="area">大雨エリアコード</label>
+      <input type="text" id="area" inputmode="numeric" placeholder="2310000">
+      <span class="hint">気象庁 市町村等 7桁</span>
+    </div>
+    <div class="field">
+      <label for="wbgt_place">WBGT 出典表示</label>
+      <input type="text" id="wbgt_place" placeholder="環境省（観測地点：名古屋）">
+    </div>
+    <div class="field">
+      <label for="rain_place">大雨 出典表示</label>
+      <input type="text" id="rain_place" placeholder="気象庁（名古屋市）">
+    </div>
+    <div class="field full">
+      <label for="gas">GAS API URL（空でもデモ可）</label>
+      <input type="url" id="gas" placeholder="https://script.google.com/macros/s/.../exec">
+    </div>
+    <div class="field">
+      <label for="loop">画面切替秒</label>
+      <input type="number" id="loop" min="1" max="120" value="8">
+    </div>
+    <div class="field">
+      <label for="fetch">予備取得間隔(分)</label>
+      <input type="number" id="fetch" min="1" max="60" value="15">
+    </div>
+  </div>
+</form>
+
+<div class="panel">
+  <h2>4. 発行URL</h2>
+  <div class="url-box" id="urlOut" aria-live="polite"></div>
+  <span class="res-badge" id="resBadge"></span>
+  <p class="hint" style="margin-top:10px;line-height:1.55;">
+    プレイヤーにはこのURLを登録してください。<code>site_id</code> があれば同じ会場をすぐ再現できます。<br>
+    LED: <strong>fit=0 · viewport=0 · embed=1</strong> を維持。1920×1080 LCD は幅・高さに 1920 / 1080 を入れてください。
+  </p>
+  <div class="url-actions">
+    <button type="button" id="copyBtn">URLをコピー</button>
+    <a class="btn secondary" id="openBtn" href="#" target="_blank" rel="noopener">このURLを開く</a>
+    <span class="copied" id="copiedMsg">コピーしました</span>
+  </div>
+</div>
+
+<script src="data/sites.js"></script>
+<script>
+const LAYOUT_VER=132;
+const SIZES={
+ 'P3.47':{75:[432,288],100:[576,432],125:[720,576]},
+ 'P2.87':{75:[528,352],100:[704,528],125:[880,704]}
+};
+const DEFAULT_GAS='https://script.google.com/macros/s/AKfycbypX8gmSDsx449D61PUHEkud6863ENczcivJ4axfVxZhLNDtcjx1we7fYTPeTw0kmBx/exec';
+const LED_PRESETS=[
+ {label:'P3.47 · 100インチ',pitch:'P3.47',inch:'100',w:'',h:''},
+ {label:'P3.47 · 75インチ',pitch:'P3.47',inch:'75',w:'',h:''},
+ {label:'P3.47 · 125インチ',pitch:'P3.47',inch:'125',w:'',h:''},
+ {label:'P2.87 · 100インチ',pitch:'P2.87',inch:'100',w:'',h:''},
+ {label:'LED Cloud 1920×1080',pitch:'P3.47',inch:'100',w:'1920',h:'1080'}
+];
+
+const prefSel=document.getElementById('pref');
+const citySel=document.getElementById('city');
+const ids=['site','site_id','pitch','inch','sign_w','sign_h','point','area','wbgt_place','rain_place','gas','loop','fetch'];
+const urlOut=document.getElementById('urlOut');
+const resBadge=document.getElementById('resBadge');
+const openBtn=document.getElementById('openBtn');
+const copiedMsg=document.getElementById('copiedMsg');
+
+function sites(){ return window.WBGT_SITES||[]; }
+function prefs(){
+ const seen=new Set();
+ return sites().map(s=>s.pref).filter(p=>{ if(seen.has(p)) return false; seen.add(p); return true; });
+}
+function citiesOf(pref){ return sites().filter(s=>s.pref===pref); }
+
+function fillPrefOptions(){
+ prefSel.innerHTML='';
+ prefs().forEach(p=>{
+  const o=document.createElement('option');
+  o.value=p; o.textContent=p;
+  prefSel.appendChild(o);
+ });
+}
+function fillCityOptions(pref, selectedId){
+ citySel.innerHTML='';
+ citiesOf(pref).forEach(s=>{
+  const o=document.createElement('option');
+  o.value=s.id; o.textContent=s.site;
+  if(selectedId&&s.id===selectedId) o.selected=true;
+  citySel.appendChild(o);
+ });
+}
+function applySiteId(id){
+ const s=(window.WBGT_SITE_BY_ID||{})[id];
+ if(!s) return;
+ const f=window.applyWbgtSiteFields(s);
+ Object.keys(f).forEach(k=>{
+  const el=document.getElementById(k);
+  if(el) el.value=f[k];
+ });
+ prefSel.value=s.pref;
+ fillCityOptions(s.pref, s.id);
+ updateUrl();
+}
+
+function readForm(){
+ const o={};
+ ids.forEach(id=>{o[id]=document.getElementById(id).value.trim();});
+ return o;
+}
+function fillForm(p){
+ ids.forEach(id=>{
+  if(p[id]!=null) document.getElementById(id).value=p[id];
+ });
+ updateUrl();
+}
+function buildQuery(cfg){
+ const q=new URLSearchParams();
+ q.set('pitch',cfg.pitch||'P3.47');
+ q.set('inch',cfg.inch||'100');
+ q.set('fit','0');
+ q.set('viewport','0');
+ q.set('embed','1');
+ q.set('v',String(LAYOUT_VER));
+ if(cfg.site_id) q.set('site_id',cfg.site_id);
+ if(cfg.site) q.set('site',cfg.site);
+ if(cfg.point) q.set('point',cfg.point);
+ if(cfg.area) q.set('area',cfg.area);
+ if(cfg.wbgt_place) q.set('wbgt_place',cfg.wbgt_place);
+ if(cfg.rain_place) q.set('rain_place',cfg.rain_place);
+ if(cfg.gas) q.set('gas',cfg.gas);
+ if(cfg.loop&&cfg.loop!=='8') q.set('loop',cfg.loop);
+ if(cfg.sign_w) q.set('w',cfg.sign_w);
+ if(cfg.sign_h) q.set('h',cfg.sign_h);
+ if(cfg.sign_w&&cfg.sign_h) q.set('ledcloud','1');
+ return q;
+}
+function buildUrl(cfg){
+ const base=new URL('index.html',location.href);
+ base.search=buildQuery(cfg).toString();
+ return base.href;
+}
+function updateUrl(){
+ const cfg=readForm();
+ const url=buildUrl(cfg);
+ urlOut.textContent=url;
+ openBtn.href=url;
+ const pitch=cfg.pitch||'P3.47';
+ const inch=+(cfg.inch||100);
+ const sw=+(cfg.sign_w||0), sh=+(cfg.sign_h||0);
+ if(sw>0&&sh>0) resBadge.textContent=sw+'×'+sh+'px（固定キャンバス）';
+ else{
+  const sz=SIZES[pitch]&&SIZES[pitch][inch];
+  resBadge.textContent=sz?`${pitch} · ${inch}" = ${sz[0]}×${sz[1]}px`:'';
+ }
+ const qs=buildQuery(cfg).toString();
+ history.replaceState(null,'',qs?'?'+qs:location.pathname);
+}
+
+const ledChips=document.getElementById('ledChips');
+LED_PRESETS.forEach(p=>{
+ const b=document.createElement('button');
+ b.type='button';
+ b.textContent=p.label;
+ b.addEventListener('click',()=>{
+  document.getElementById('pitch').value=p.pitch;
+  document.getElementById('inch').value=p.inch;
+  document.getElementById('sign_w').value=p.w||'';
+  document.getElementById('sign_h').value=p.h||'';
+  [...ledChips.querySelectorAll('button')].forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  updateUrl();
+ });
+ ledChips.appendChild(b);
+});
+
+prefSel.addEventListener('change',()=>{
+ fillCityOptions(prefSel.value);
+ if(citySel.value) applySiteId(citySel.value);
+});
+citySel.addEventListener('change',()=>applySiteId(citySel.value));
+
+ids.forEach(id=>{
+ const el=document.getElementById(id);
+ if(!el||el.id==='site_id') return;
+ el.addEventListener('input',updateUrl);
+ el.addEventListener('change',updateUrl);
+});
+
+document.getElementById('copyBtn').addEventListener('click',async()=>{
+ const text=urlOut.textContent;
+ try{ await navigator.clipboard.writeText(text); }
+ catch(e){
+  const ta=document.createElement('textarea');
+  ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
+ }
+ copiedMsg.classList.add('show');
+ setTimeout(()=>copiedMsg.classList.remove('show'),2000);
+});
+
+function boot(){
+ fillPrefOptions();
+ document.getElementById('gas').value=DEFAULT_GAS;
+ const q=new URLSearchParams(location.search);
+ const sid=q.get('site_id')||'nagoya';
+ const s=(window.WBGT_SITE_BY_ID||{})[sid]||window.WBGT_SITE_BY_ID.nagoya;
+ prefSel.value=s.pref;
+ fillCityOptions(s.pref, s.id);
+ applySiteId(s.id);
+ if(q.get('pitch')) document.getElementById('pitch').value=q.get('pitch');
+ if(q.get('inch')) document.getElementById('inch').value=q.get('inch');
+ if(q.get('w')) document.getElementById('sign_w').value=q.get('w');
+ if(q.get('h')) document.getElementById('sign_h').value=q.get('h');
+ if(q.get('site')) document.getElementById('site').value=decodeURIComponent(q.get('site'));
+ if(q.get('point')) document.getElementById('point').value=q.get('point');
+ if(q.get('area')) document.getElementById('area').value=q.get('area');
+ if(q.get('gas')) document.getElementById('gas').value=q.get('gas');
+ updateUrl();
+}
+boot();
+</script>
+</body>
+</html>

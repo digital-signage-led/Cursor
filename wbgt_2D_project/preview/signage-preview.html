@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -38,9 +38,12 @@ table.spec th{background:#1a1a22;}
 <h1>LEDサイネージ — 6解像度プレビュー</h1>
 <p class="lead">
   各枠は<strong>実ピクセル数どおり</strong>のレイアウトを縮小表示しています（デモデータ・WBGT注意表示）。<br>
-  <a href="index.html">通常表示（PCフル画面）</a> ·
+  <a href="../index.html">通常表示（PCフル画面）</a> ·
+  <a href="../setup.html">URL発行（仕様入力）</a> ·
   <a href="signage-preview.html">このページ</a> ·
-  <a href="wbgt-levels-preview.html">WBGT 5段階一覧</a>
+  <a href="wbgt-levels-preview.html">WBGT 5段階一覧</a> ·
+  <a href="rain-levels-preview.html">大雨 5段階一覧</a> ·
+  <a href="all-content.html">全コンテンツ再生</a>
 </p>
 <div class="toolbar">
   <button type="button" id="reloadBtn">プレビューを再読み込み</button>
@@ -61,7 +64,7 @@ table.spec th{background:#1a1a22;}
 
 <script>
 /* index.html の LAYOUT_VER と揃える（index 側 dataset.layout-ver でも確認可） */
-const LAYOUT_VER=17;
+const LAYOUT_VER=132;
 const SPECS=[
  {pitch:'P3.47',inch:75,w:432,h:288},
  {pitch:'P3.47',inch:100,w:576,h:432},
@@ -85,9 +88,9 @@ function indexUrl(s,opts){
   _:String(Date.now()+Math.random())
  });
  if(opts.embed) q.set('embed','1');
- if(opts.fit) q.set('fit',opts.fit);
+ if('fit' in opts) q.set('fit',String(opts.fit));
  if(opts.tune) q.set('tune','1');
- return 'index.html?'+q.toString();
+ return '../index.html?'+q.toString();
 }
 
 function buildGrid(){

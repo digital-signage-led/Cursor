@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WBGT 5段階レイアウトプレビュー</title>
+<title>WBGT 5????????E????</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:#0e0e12;color:#e8e8e8;font-family:'Segoe UI','Noto Sans JP',sans-serif;padding:20px 24px 40px;}
@@ -26,22 +26,23 @@ h1{font-size:20px;font-weight:900;margin-bottom:6px;}
 </style>
 </head>
 <body>
-<h1>WBGT — 5段階レイアウト一覧</h1>
+<h1>WBGT ?E5?????????</h1>
 <p class="lead">
-  安全・注意・警戒・厳重警戒・危険のレイアウトを並べて確認できます。<br>
-  <a href="signage-preview.html">6解像度プレビュー</a> ·
-  <a href="index.html?demo=1">デモ（単体）</a>
+  ??E????E???E?????E???????????????????Ebr>
+  <a href="signage-preview.html">6????????</a> �
+  <a href="rain-levels-preview.html">?? 5???E????</a> �
+  <a href="../index.html?demo=1">?E???E????E/a>
 </p>
 
 <div class="toolbar">
-  <label for="spec">解像度</label>
+  <label for="spec">???</label>
   <select id="spec">
-    <option value="P3.47|75">P3.47 · 75インチ（432×288）</option>
-    <option value="P3.47|100" selected>P3.47 · 100インチ（576×432）</option>
-    <option value="P3.47|125">P3.47 · 125インチ（720×576）</option>
-    <option value="P2.87|75">P2.87 · 75インチ（528×352）</option>
-    <option value="P2.87|100">P2.87 · 100インチ（704×528）</option>
-    <option value="P2.87|125">P2.87 · 125インチ（880×704）</option>
+    <option value="P3.47|75">P3.47 � 75???E??E32�E88?E?E/option>
+    <option value="P3.47|100" selected>P3.47 � 100???E??E76�E32?E?E/option>
+    <option value="P3.47|125">P3.47 � 125???E??E20�E76?E?E/option>
+    <option value="P2.87|75">P2.87 � 75???E??E28�E52?E?E/option>
+    <option value="P2.87|100">P2.87 � 100???E??E04�E28?E?E/option>
+    <option value="P2.87|125">P2.87 � 125???E??E80�E04?E?E/option>
   </select>
 </div>
 
@@ -49,11 +50,11 @@ h1{font-size:20px;font-weight:900;margin-bottom:6px;}
 
 <script>
 const LEVELS=[
- {i:0,name:'安全',w:18,bg:'#4A90D9'},
- {i:1,name:'注意',w:23,bg:'#FAD24A'},
- {i:2,name:'警戒',w:26.5,bg:'#F2A91B'},
- {i:3,name:'厳重警戒',w:29.5,bg:'#F47C1B'},
- {i:4,name:'危険',w:33,bg:'#E5302A'}
+ {i:0,name:'????E',w:18,bg:'#4A90D9'},
+ {i:1,name:'??E,w:23,bg:'#FAD24A'},
+ {i:2,name:'??E,w:26.5,bg:'#F2A91B'},
+ {i:3,name:'????E,w:29.5,bg:'#F47C1B'},
+ {i:4,name:'??',w:33,bg:'#E5302A'}
 ];
 const SIZES={
  'P3.47|75':[432,288],'P3.47|100':[576,432],'P3.47|125':[720,576],
@@ -76,18 +77,18 @@ function render(){
   cell.className='cell';
   cell.innerHTML=`
    <h2>${L.name}<span class="badge" style="background:${L.bg};color:${L.i>=3||L.i===0?'#fff':'#111'}">WBGT ${L.w}</span></h2>
-   <div class="sub">${pitch} · ${inch}インチ · ${w}×${h}px</div>
+   <div class="sub">${pitch} � ${inch}???E� ${w}�E{h}px</div>
    <div class="viewport" style="width:${Math.round(w*scale)}px;height:${Math.round(h*scale)}px"></div>
    <div class="links">
-    <a href="index.html?pitch=${encodeURIComponent(pitch)}&inch=${inch}&demo=1&level=${L.i}&fit=0" target="_blank">フルサイズ（1:1）</a>
-    <a href="index.html?pitch=${encodeURIComponent(pitch)}&inch=${inch}&demo=1&level=${L.i}&tune=1&fit=0" target="_blank">フルサイズで微調整</a>
+    <a href="../index.html?pitch=${encodeURIComponent(pitch)}&inch=${inch}&demo=1&level=${L.i}&fit=0" target="_blank">??????E?E:1?E?E/a>
+    <a href="../index.html?pitch=${encodeURIComponent(pitch)}&inch=${inch}&demo=1&level=${L.i}&tune=1&fit=0" target="_blank">?????????</a>
    </div>`;
   const vp=cell.querySelector('.viewport');
   const ifr=document.createElement('iframe');
   ifr.width=w; ifr.height=h;
   ifr.style.width=w+'px'; ifr.style.height=h+'px';
   ifr.style.transform='scale('+scale+')';
-  ifr.src='index.html?pitch='+encodeURIComponent(pitch)+'&inch='+inch+'&embed=1&demo=1&level='+L.i+'&v=17&_='+Date.now();
+  ifr.src='../index.html?pitch='+encodeURIComponent(pitch)+'&inch='+inch+'&embed=1&demo=1&level='+L.i+'&v=132&_='+Date.now();
   ifr.title=L.name;
   vp.appendChild(ifr);
   grid.appendChild(cell);

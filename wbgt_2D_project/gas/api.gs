@@ -1,35 +1,36 @@
-/**
- * 防災モニタリング API（WBGT + 大雨 統合）
- * index.html の GAS_URL にデプロイURLを設定
- *
- * type=wbgt | rain | all（推奨）
- * point=環境省地点（6桁表示: 620780=大阪 → API 62078）
- * area=気象庁市町村等（例: 1223800=千葉県いすみ市）
- */
 function doGet(e) {
   var p = (e && e.parameter) || {};
   var callback = p.callback;
   var type = String(p.type || 'all').toLowerCase();
-  var point = p.point || '620780';
-  var area = p.area || '1223800';
+  var point = p.point || '511060';
+  var area = p.area || '2310000';
   var data;
 
   if (type === 'wbgt') {
     try { data = fetchWbgt_(point); }
     catch (err) { data = { error: String(err) }; }
   } else if (type === 'rain') {
-    try { data = { level: fetchRainLevel_(area) }; }
+    try { data = fetchRainLevel_(area); }
     catch (err) { data = { error: String(err) }; }
   } else if (type === 'all') {
     data = {};
     try { data.wbgt = fetchWbgt_(point); }
     catch (err) { data.wbgt = { error: String(err) }; }
-    try { data.rain = { level: fetchRainLevel_(area) }; }
+    try { data.rain = fetchRainLevel_(area); }
     catch (err) { data.rain = { error: String(err) }; }
   } else {
     data = { error: 'type must be wbgt, rain, or all' };
   }
   return output_(data, callback);
+}
+
+var FETCH_TIMEOUT_MS = 10000;
+function fetchHttp_(url, options) {
+  var o = options || {};
+  o.muteHttpExceptions = true;
+  if (o.followRedirects !== false) o.followRedirects = true;
+  o.timeout = o.timeout || FETCH_TIMEOUT_MS;
+  return UrlFetchApp.fetch(url, o);
 }
 
 function fetchWbgt_(point) {
@@ -94,12 +95,9 @@ function fetchSurveyRows_(wbgtNo, range, dataType) {
     'date_to=' + range.date_to
   ].join('&');
 
-  var res = UrlFetchApp.fetch(base + '?' + q, {
-    muteHttpExceptions: true,
-    followRedirects: true
-  });
+  var res = fetchHttp_(base + '?' + q);
   if (res.getResponseCode() !== 200) {
-    res = UrlFetchApp.fetch(base, {
+    res = fetchHttp_(base, {
       method: 'post',
       contentType: 'application/json',
       payload: JSON.stringify({
@@ -108,9 +106,7 @@ function fetchSurveyRows_(wbgtNo, range, dataType) {
         wbgt_nos: [wbgtNo],
         date_from: range.date_from,
         date_to: range.date_to
-      }),
-      muteHttpExceptions: true,
-      followRedirects: true
+      })
     });
   }
   if (res.getResponseCode() !== 200) {
@@ -166,7 +162,7 @@ function fetchWbgtCsv_(point) {
   var now = new Date();
   var yymm = Utilities.formatDate(now, 'Asia/Tokyo', 'yyyyMM');
   var url = 'https://www.wbgt.env.go.jp/est15WG/dl/wbgt_' + wbgtNo + '_' + yymm + '.csv';
-  var res = UrlFetchApp.fetch(url, { muteHttpExceptions: true, followRedirects: true });
+  var res = fetchHttp_(url);
   if (res.getResponseCode() !== 200) throw new Error('HTTP ' + res.getResponseCode());
 
   var text = res.getContentText('UTF-8').replace(/^\uFEFF/, '');
@@ -196,7 +192,7 @@ function fetchWbgtCsv_(point) {
 function formatTimeCsv_(t) {
   if (!t) return '';
   var m = String(t).match(/(\d{1,2}):(\d{2})/);
-  if (m) return ('0' + m[1]).slice(-2) + ':' + m[2];
+  if (m) return ('0' + m[1]).slice(-2) + ':00';
   return String(t);
 }
 
@@ -222,7 +218,7 @@ function estimateHumidity_(tw, ta) {
 
 function fetchWbgtLegacy_(point) {
   var url = 'https://www.wbgt.env.go.jp/observ_json.php?id=' + encodeURIComponent(point);
-  var res = UrlFetchApp.fetch(url, { muteHttpExceptions: true, followRedirects: true });
+  var res = fetchHttp_(url);
   if (res.getResponseCode() !== 200) throw new Error('legacy ' + res.getResponseCode());
 
   var raw = JSON.parse(res.getContentText('UTF-8'));
@@ -263,7 +259,7 @@ function fetchRainLevelR8_(areaCode) {
   var code = String(areaCode);
   var pref = prefectureCodeFromArea_(code);
   var url = 'https://www.jma.go.jp/bosai/warning/data/r8/' + pref + '.json';
-  var res = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+  var res = fetchHttp_(url);
   if (res.getResponseCode() !== 200) throw new Error('jma r8 ' + res.getResponseCode());
 
   var list = JSON.parse(res.getContentText('UTF-8'));
@@ -281,7 +277,7 @@ function fetchRainLevelR8_(areaCode) {
     if (item10) maxLevel = Math.max(maxLevel, kindsToRainLevel_(item10.kinds));
   }
 
-  return maxLevel;
+  return { level: maxLevel, updated: list[0].reportDatetime || '' };
 }
 
 function findAreaItem_(items, code) {
@@ -292,7 +288,7 @@ function findAreaItem_(items, code) {
   return null;
 }
 
-/** 市町村コード → 一次細分区域（いすみ 1223800 → 120030） */
+/** 市町村コード → 一次細分区域（名古屋 2310000 → 230030） */
 function class10FromArea_(areaCode) {
   var s = String(areaCode);
   if (s.length >= 6) return s.substring(0, 2) + '0030';
@@ -334,7 +330,7 @@ function fetchRainLevelLegacy_(areaCode) {
   var code = String(areaCode);
   var pref = prefectureCodeFromArea_(code);
   var url = 'https://www.jma.go.jp/bosai/warning/data/warning/' + pref + '.json';
-  var res = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+  var res = fetchHttp_(url);
   if (res.getResponseCode() !== 200) throw new Error('jma legacy ' + res.getResponseCode());
 
   var data = JSON.parse(res.getContentText('UTF-8'));
@@ -353,10 +349,8 @@ function fetchRainLevelLegacy_(areaCode) {
       }
     }
   }
-  return maxLevel;
+  return { level: maxLevel, updated: data.reportDatetime || '' };
 }
-
-function prefectureCodeFromArea_(areaCode) {
   var s = String(areaCode);
   if (s.length >= 2) return s.slice(0, 2) + '0000';
   return s;
@@ -382,8 +376,14 @@ function warningIsActive_(w) {
 function formatTime_(t) {
   if (!t) return '';
   var s = String(t);
+  if (/時現在$/.test(s)) {
+    var jm = s.match(/^(\d{1,2})時現在$/);
+    if (jm) return ('0' + jm[1]).slice(-2) + ':00';
+  }
+  var dm = s.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})\s+(\d{1,2}):(\d{2})/);
+  if (dm) return ('0' + dm[4]).slice(-2) + ':00';
   var m = s.match(/(\d{1,2}):(\d{2})/);
-  if (m) return ('0' + m[1]).slice(-2) + ':' + m[2];
+  if (m) return ('0' + m[1]).slice(-2) + ':00';
   return s;
 }
 

@@ -1,0 +1,100 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>全コンテンツ再生 — 1920×1080</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;font-family:'Segoe UI','Noto Sans JP',sans-serif;}
+.stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+.frame{position:relative;overflow:hidden;background:#000;line-height:0;}
+.frame iframe{border:0;display:block;transform-origin:0 0;background:#000;}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="frame" id="frame">
+    <iframe id="view" title="全コンテンツ 1920×1080" allow="fullscreen"></iframe>
+  </div>
+</div>
+<script>
+const LAYOUT_VER=132;
+const CW=1920;
+const CH=1080;
+const SCENES=[
+ {kind:'WBGT',name:'ほぼ安全',mode:'wbgt',level:0},
+ {kind:'WBGT',name:'注意',mode:'wbgt',level:1},
+ {kind:'WBGT',name:'警戒',mode:'wbgt',level:2},
+ {kind:'WBGT',name:'厳重警戒',mode:'wbgt',level:3},
+ {kind:'WBGT',name:'危険',mode:'wbgt',level:4},
+ {kind:'大雨',name:'レベル1 早期注意情報',mode:'rain',rain:1},
+ {kind:'大雨',name:'レベル2 大雨注意報',mode:'rain',rain:2},
+ {kind:'大雨',name:'レベル3 大雨警報',mode:'rain',rain:3},
+ {kind:'大雨',name:'レベル4 大雨危険警報',mode:'rain',rain:4},
+ {kind:'大雨',name:'レベル5 大雨特別警報',mode:'rain',rain:5}
+];
+
+const q=new URLSearchParams(location.search);
+const hold=Math.max(3,(+q.get('sec')||6))*1000;
+const frame=document.getElementById('frame');
+const view=document.getElementById('view');
+let idx=0;
+let playing=true;
+let timer=null;
+
+function sceneUrl(s){
+ const p=new URLSearchParams({
+  demo:'1',
+  mode:s.mode,
+  fit:'0',
+  w:String(CW),
+  h:String(CH),
+  embed:'1',
+  v:String(LAYOUT_VER),
+  _:String(Date.now())
+ });
+ if(s.mode==='wbgt') p.set('level',String(s.level));
+ else p.set('rain',String(s.rain));
+ return '../index.html?'+p.toString();
+}
+
+function fit(){
+ const scale=Math.min(window.innerWidth/CW,window.innerHeight/CH);
+ frame.style.width=Math.round(CW*scale)+'px';
+ frame.style.height=Math.round(CH*scale)+'px';
+ view.width=CW;
+ view.height=CH;
+ view.style.width=CW+'px';
+ view.style.height=CH+'px';
+ view.style.transform='scale('+scale+')';
+}
+
+function arm(){
+ if(timer) clearTimeout(timer);
+ timer=null;
+ if(!playing) return;
+ timer=setTimeout(()=>show(idx+1),hold);
+}
+
+function show(i){
+ idx=(i+SCENES.length)%SCENES.length;
+ view.src=sceneUrl(SCENES[idx]);
+}
+
+window.addEventListener('resize',fit);
+document.addEventListener('keydown',e=>{
+ if(e.key==='ArrowRight'){show(idx+1);arm();}
+ else if(e.key==='ArrowLeft'){show(idx-1);arm();}
+ else if(e.key===' '){
+  e.preventDefault();
+  playing=!playing;
+  if(playing) arm();
+  else { if(timer) clearTimeout(timer); timer=null; }
+ }
+});
+view.addEventListener('load',arm);
+fit();
+show(0);
+</script>
+</body>
+</html>
