@@ -1,6 +1,6 @@
 @echo off
 cd /d "%~dp0"
-echo 大阪 警報情報（サイネージ 640x192）を起動します...
+echo 舞鶴 警報情報（サイネージ 640x192）を起動します...
 
 REM 先にサーバー起動（別窓）
 start "osaka-warning-server" cmd /c "node server.mjs"

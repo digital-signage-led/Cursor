@@ -299,7 +299,7 @@ export function buildMarqueeText(state) {
   return `${head}${parts.join("　　／　　")}　　気象情報にご注意ください${office}　　`;
 }
 
-/** デモ用（大阪）— 文言に必ず「デモ」を含め、本番と取り違えないようにする */
+/** デモ用（舞鶴市）— 文言に必ず「デモ」を含め、本番と取り違えないようにする */
 export function buildDemoWarnings() {
   return {
     items: [
@@ -311,7 +311,7 @@ export function buildDemoWarnings() {
         short: "大雨特別（デモ）",
         hazard: "大雨",
         hasAlertLevel: true,
-        areas: ["大阪"],
+        areas: ["舞鶴市"],
         status: "発表",
         theme: "special",
       },
@@ -323,7 +323,7 @@ export function buildDemoWarnings() {
         short: "氾濫特別（デモ）",
         hazard: "河川氾濫",
         hasAlertLevel: true,
-        areas: ["大阪"],
+        areas: ["舞鶴市"],
         status: "発表",
         theme: "special",
       },
@@ -335,7 +335,7 @@ export function buildDemoWarnings() {
         short: "土砂危険（デモ）",
         hazard: "土砂災害",
         hasAlertLevel: true,
-        areas: ["大阪"],
+        areas: ["舞鶴市"],
         status: "発表",
         theme: "danger",
       },
@@ -347,7 +347,7 @@ export function buildDemoWarnings() {
         short: "高潮危険（デモ）",
         hazard: "高潮",
         hasAlertLevel: true,
-        areas: ["大阪"],
+        areas: ["舞鶴市"],
         status: "発表",
         theme: "danger",
       },
@@ -359,7 +359,7 @@ export function buildDemoWarnings() {
         short: "大雨警報（デモ）",
         hazard: "大雨",
         hasAlertLevel: true,
-        areas: ["大阪"],
+        areas: ["舞鶴市"],
         status: "発表",
         theme: "warning",
       },
@@ -371,13 +371,13 @@ export function buildDemoWarnings() {
         short: "雷（デモ）",
         hazard: "雷",
         hasAlertLevel: false,
-        areas: ["大阪"],
+        areas: ["舞鶴市"],
         status: "発表",
         theme: "advisory",
       },
     ],
     headline:
-      "【デモ】これはデモ表示です。本番の気象庁発表ではありません。大阪府にレベル５大雨特別警報・レベル５氾濫特別警報が発表されている想定です。",
+      "【デモ】これはデモ表示です。本番の気象庁発表ではありません。舞鶴市にレベル５大雨特別警報・レベル５氾濫特別警報が発表されている想定です。",
     reportDatetime: new Date().toISOString(),
     publishingOffice: "デモ（本番の気象庁発表ではありません）",
   };
@@ -414,8 +414,8 @@ export function mergeLiveAndDemo(live, demo) {
     live.headline ||
     demo.headline ||
     (liveCount
-      ? "大阪府に警報・注意報が発表されています。"
-      : "【デモ表示】大阪府の警報・注意報サンプルを表示しています。");
+      ? "舞鶴市に警報・注意報が発表されています。"
+      : "【デモ表示】舞鶴市の警報・注意報サンプルを表示しています。");
 
   return {
     items,
@@ -423,6 +423,6 @@ export function mergeLiveAndDemo(live, demo) {
     reportDatetime: live.reportDatetime || demo.reportDatetime || new Date().toISOString(),
     publishingOffice: live.publishingOffice
       ? `${live.publishingOffice}${liveCount ? "" : "／デモ併記"}`
-      : demo.publishingOffice || "大阪管区気象台",
+      : demo.publishingOffice || "京都地方気象台",
   };
 }

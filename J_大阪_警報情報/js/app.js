@@ -1,4 +1,4 @@
-import { CONFIG } from "./config.js?v=20261026b";
+import { CONFIG } from "./config.js?v=20261026c";
 import {
   buildDemoWarnings,
   buildMarqueeText,
@@ -18,7 +18,7 @@ import {
   runQuakeDemoCycle,
   showLiveQuake,
   startQuakeLoop,
-} from "./quake.js?v=20261026b";
+} from "./quake.js?v=20261026c";
 
 const $ = (id) => document.getElementById(id);
 

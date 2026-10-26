@@ -1,22 +1,22 @@
 export const CONFIG = {
-  /** 大阪府（府県予報区）— JSON 取得用 */
-  areaCode: "270000",
-  areaLabel: "大阪府",
+  /** 京都府（府県予報区）— JSON 取得用 */
+  areaCode: "260000",
+  areaLabel: "京都府",
   /**
    * 表示対象の市区町村（二次細分）
-   * 気象庁: https://www.jma.go.jp/bosai/#pattern=default&area_type=class20s&area_code=2710000
+   * 気象庁: https://www.jma.go.jp/bosai/#pattern=default&area_type=class20s&area_code=2620200
    */
-  targetAreaCode: "2710000",
+  targetAreaCode: "2620200",
   /** サイネージ上の地域表示 */
-  displayArea: "大阪市",
+  displayArea: "舞鶴市",
   /** 警報ポーリング間隔（ミリ秒）※ライブ固定モード用 */
   pollIntervalMs: 60_000,
   /** 地震情報の確認間隔。発表後すぐに出す */
   quakePollMs: 10_000,
-  /** 大阪市を含む地震情報を出しておく時間 */
+  /** 舞鶴市を含む地震情報を出しておく時間 */
   quakeShowMs: 3 * 60 * 60 * 1000,
-  /** 震度の市区町村コード（大阪市） */
-  quakeCityCode: "2710000",
+  /** 震度の市区町村コード（舞鶴市） */
+  quakeCityCode: "2620200",
   /** デモ（?demo=1） / ライブのみ（?live=1） / 地震デモ（?quake=1） */
   demoQuery: "demo",
   /**
@@ -42,5 +42,5 @@ export const CONFIG = {
   chipScrollMinCount: 1,
   /** 発表なしテロップ */
   idleMarqueeText:
-    "現在、大阪市では警報・注意報は発表されていません　　気象情報をご確認ください　　",
+    "現在、舞鶴市では警報・注意報は発表されていません　　気象情報をご確認ください　　",
 };

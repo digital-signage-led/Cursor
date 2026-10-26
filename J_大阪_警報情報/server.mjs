@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** 大阪 警報情報（本番）ローカルサーバー */
+/** 舞鶴 警報情報（本番）ローカルサーバー */
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
@@ -59,7 +59,7 @@ const server = http.createServer(async (req, res) => {
 
   try {
     if (url.pathname === "/api/warning") {
-      const code = url.searchParams.get("code") || "270000";
+      const code = url.searchParams.get("code") || "260000";
       const target = `https://www.jma.go.jp/bosai/warning/data/r8/${code}.json`;
       const result = await proxyJson(target);
       send(res, result.status, result.body, "application/json; charset=utf-8");
@@ -95,7 +95,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`大阪 警報情報（本番）: http://${HOST}:${PORT}/`);
+  console.log(`舞鶴 警報情報（本番）: http://${HOST}:${PORT}/`);
   console.log(`プレイリスト:          http://${HOST}:${PORT}/?signage=1`);
   console.log(`警報デモのみ:          http://${HOST}:${PORT}/?demo=1`);
   console.log(`地震デモのみ:          http://${HOST}:${PORT}/?quake=1`);

@@ -1,9 +1,9 @@
-import { CONFIG } from "./config.js?v=20261026b";
+import { CONFIG } from "./config.js?v=20261026c";
 
 /** 販売機 地震緊急 640×192 · E.Q1.0（デモ） */
 
 export const CONTENT_VERSION = "E.Q1.0";
-export const LOCAL_CITY = "大阪市";
+export const LOCAL_CITY = "舞鶴市";
 
 /** 気象庁震度階級カラー＋ゆれの状況（参考図準拠） */
 export const INT_META = {
@@ -54,7 +54,7 @@ export const SCENES = [
   {
     severe: "",
     localInt: 1,
-    epicenter: "大阪府北部",
+    epicenter: "京都府北部",
     depth: 30,
     mag: 3.2,
     alert: "【デモ】緊急地震速報　揺れに注意",
@@ -86,7 +86,7 @@ export const SCENES = [
   {
     severe: "is-severe",
     localInt: 5,
-    epicenter: "大阪府北部",
+    epicenter: "京都府北部",
     depth: 10,
     mag: 5.4,
     alert: "【デモ】緊急地震速報　強い揺れが来ます",
@@ -138,32 +138,53 @@ function intMeta(v) {
   return INT_META[v] || INT_META[Number(v)] || INT_META[0];
 }
 
-function alertIconHtml() {
-  return (
-    '<span class="quake-alert-icon" aria-hidden="true">' +
-    '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">' +
-    '<path d="M12 2L22 20H2L12 2Z" fill="#fff" fill-opacity=".95"/>' +
-    '<path d="M12 9v5" stroke="#C62828" stroke-width="2.4" stroke-linecap="round"/>' +
-    '<circle cx="12" cy="17" r="1.3" fill="#C62828"/>' +
-    "</svg></span>"
-  );
+function fitNowrap(el, maxPx, minPx) {
+  if (!el) return;
+  let size = maxPx;
+  el.style.fontSize = size + "px";
+  while (size > minPx && el.scrollWidth > el.clientWidth + 1) {
+    size -= 1;
+    el.style.fontSize = size + "px";
+  }
+}
+
+function fitWrap(el, maxPx, minPx, maxH) {
+  if (!el) return;
+  let size = maxPx;
+  el.style.fontSize = size + "px";
+  while (size > minPx && el.scrollHeight > maxH + 1) {
+    size -= 1;
+    el.style.fontSize = size + "px";
+  }
+}
+
+function refitQuakeText() {
+  requestAnimationFrame(() => {
+    if (!root || root.hasAttribute("hidden")) return;
+    const main = $("#quakeFrontMain", root);
+    fitNowrap($("#quakeAlertText", root), 20, 13);
+    fitNowrap(main, main && main.classList.contains("is-wide") ? 26 : 32, 20);
+    fitNowrap($("#quakeFrontSub", root), 16, 12);
+    fitNowrap($("#quakeAdviceAct", root), 16, 12);
+    fitWrap($("#quakeAdviceDesc", root), 14, 11, 36);
+  });
 }
 
 function setTicker(text) {
   if (!root) return;
-  const item =
-    '<span class="quake-ticker-item">' +
-    alertIconHtml() +
-    '<span class="quake-alert-text">' +
-    text +
-    "</span></span>";
-  const half = item + item + item;
-  const track = $("#quakeTickerTrack", root);
-  if (!track) return;
-  track.innerHTML = half + half;
-  track.style.animation = "none";
-  void track.offsetWidth;
-  track.style.animation = "";
+  const el = $("#quakeAlertText", root);
+  if (!el) return;
+  el.textContent = text;
+  refitQuakeText();
+}
+
+function setAdvice(action, desc) {
+  if (!root) return;
+  const act = $("#quakeAdviceAct", root);
+  const dsc = $("#quakeAdviceDesc", root);
+  if (act) act.textContent = action;
+  if (dsc) dsc.textContent = desc;
+  refitQuakeText();
 }
 
 function setFront(s) {
@@ -176,9 +197,8 @@ function setFront(s) {
   main.style.setProperty("--int-fg", meta.fg);
   main.classList.toggle("is-wide", text.length >= 8);
   const sub = $("#quakeFrontSub", root);
-  if (sub) {
-    sub.textContent = `【デモ】震源 ${s.epicenter} / M${s.mag}`;
-  }
+  if (sub) sub.textContent = `【デモ】震源 ${s.epicenter} / M${s.mag}`;
+  refitQuakeText();
 }
 
 function setSideIntensity(v) {
@@ -203,16 +223,8 @@ function setSideIntensity(v) {
 }
 
 function setSideTicker(s) {
-  if (!root) return;
   const meta = intMeta(s.localInt);
-  const msg = `【デモ】${LOCAL_CITY}　身の安全を確保してください　／　${meta.desc}　／　これはデモ表示です`;
-  const unit = `<span>${msg}</span>`;
-  $$(".js-quake-side-ticker", root).forEach((track) => {
-    track.innerHTML = unit + unit + unit + unit;
-    track.style.animation = "none";
-    void track.offsetWidth;
-    track.style.animation = "";
-  });
+  setAdvice("【デモ】身の安全を確保してください", meta.desc);
 }
 
 function playEnter() {
@@ -260,6 +272,7 @@ export function showQuake() {
   root.removeAttribute("hidden");
   root.classList.add("is-visible");
   document.body.classList.add("is-quake");
+  refitQuakeText();
   const machine = document.getElementById("machine");
   machine?.classList.add("is-hidden");
 }
@@ -334,11 +347,9 @@ export function startQuakeLoop(sceneMs = 3500) {
   cycleTimer = setTimeout(tick, sceneMs);
 }
 
-/** 大阪市と、その区。堺市（2714）は含めない */
-export function isOsakaCityCode(code) {
-  const c = String(code || "");
-  if (c === String(CONFIG.quakeCityCode || "2710000")) return true;
-  return /^271(?:0[2-9]|1[1-9]|2[0-8])\d{2}$/.test(c);
+/** 舞鶴市（政令市のような区分割はない） */
+export function isTargetCityCode(code) {
+  return String(code || "") === String(CONFIG.quakeCityCode || "2620200");
 }
 
 export function shindoKey(raw) {
@@ -385,7 +396,7 @@ function alertForRank(ttl, rank) {
 }
 
 /**
- * 大阪市が震度に入っている発表だけ返す。新しいものを優先。
+ * 舞鶴市が震度に入っている発表だけ返す。新しいものを優先。
  * @param {unknown} list
  * @param {number} now
  */
@@ -402,7 +413,7 @@ export function pickOsakaQuake(list, now = Date.now()) {
     let rank = 0;
     for (const block of item.int || []) {
       for (const city of block.city || []) {
-        if (!isOsakaCityCode(city.code)) continue;
+        if (!isTargetCityCode(city.code)) continue;
         const next = shindoKey(city.maxi || block.maxi);
         const nextRank = shindoRank(next);
         if (next != null && nextRank >= rank) {
@@ -468,19 +479,12 @@ function setFrontLive(s) {
     const mag = s.mag ? ` / M${s.mag}` : "";
     sub.textContent = place + mag;
   }
+  refitQuakeText();
 }
 
 function setSideTickerLive(s) {
-  if (!root) return;
   const meta = intMeta(s.localInt);
-  const msg = `${LOCAL_CITY}　身の安全を確保してください　／　${meta.desc}`;
-  const unit = `<span>${msg}</span>`;
-  $$(".js-quake-side-ticker", root).forEach((track) => {
-    track.innerHTML = unit + unit + unit + unit;
-    track.style.animation = "none";
-    void track.offsetWidth;
-    track.style.animation = "";
-  });
+  setAdvice("身の安全を確保してください", meta.desc);
 }
 
 /** 発表中の地震情報をすぐ出す（デモ文言なし） */

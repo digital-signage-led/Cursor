@@ -6,5 +6,5 @@
   "scripts": {
     "start": "node server.mjs"
   },
-  "description": "大阪府 気象警報の自販機三面表示（640×192）"
+  "description": "舞鶴市 気象警報の自販機三面表示（640×192）"
 }
