@@ -65,10 +65,14 @@ body {
   --accent: #ffffff;
 }
 
-/* 発表なしはレベル1（白） */
+/* 発表がないあいだは画面を出さない（黒） */
+body:not(.is-quake):has(.machine[data-active="false"]) {
+  background: #000;
+}
 .machine[data-active="false"] {
   --paper: var(--lv1);
   --accent: #374151;
+  visibility: hidden;
 }
 
 .face {

@@ -14,10 +14,10 @@ export const CONFIG = {
   /** デモ（?demo=1） / ライブのみ（?live=1） / 地震デモ（?quake=1） */
   demoQuery: "demo",
   /**
-   * 既定プレイリスト:
-   * 本番（警報）10秒 → 警報デモ1周 → 地震デモ1周 → 繰り返し
+   * 既定は気象庁の発表中だけ表示。
+   * デモ周回は ?playlist=1 / ?demo=1 / ?quake=1 のときだけ。
    */
-  playlistByDefault: true,
+  playlistByDefault: false,
   /** 本番（ライブ）表示時間（ミリ秒） */
   livePhaseMs: 10_000,
   /** 警報デモ：テロップ1周。ただし上限を超えない */

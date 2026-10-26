@@ -1,4 +1,4 @@
-import { CONFIG } from "./config.js";
+import { CONFIG } from "./config.js?v=20261026a";
 import {
   buildDemoWarnings,
   buildMarqueeText,
@@ -43,9 +43,9 @@ const els = {
 const params = new URLSearchParams(location.search);
 const forceDemo = params.has(CONFIG.demoQuery) || params.get("mode") === "demo";
 const forceLive = params.get("live") === "1" || params.get("mode") === "live";
-/** 地震のみは ?quake=1 のときだけ（プレイリスト既定） */
+/** 地震デモは ?quake=1 のときだけ */
 const forceQuake = params.get("quake") === "1" || params.get("mode") === "quake";
-/** 既定: ライブ→警報デモ→地震デモ。?live=1 / ?demo=1 / ?quake=1 で固定 */
+/** デモ周回は ?playlist=1 のときだけ。既定は発表中の本番のみ */
 const usePlaylist =
   !forceDemo && !forceLive && !forceQuake && CONFIG.playlistByDefault !== false;
 
