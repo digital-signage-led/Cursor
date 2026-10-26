@@ -71,6 +71,12 @@ const server = http.createServer(async (req, res) => {
       send(res, result.status, result.body, "application/json; charset=utf-8");
       return;
     }
+    if (url.pathname === "/api/quake") {
+      const target = "https://www.jma.go.jp/bosai/quake/data/list.json";
+      const result = await proxyJson(target);
+      send(res, result.status, result.body, "application/json; charset=utf-8");
+      return;
+    }
     if (url.pathname === "/api/area") {
       const target = "https://www.jma.go.jp/bosai/common/const/area.json";
       const result = await proxyJson(target);

@@ -11,6 +11,12 @@ export const CONFIG = {
   displayArea: "大阪市",
   /** 警報ポーリング間隔（ミリ秒）※ライブ固定モード用 */
   pollIntervalMs: 60_000,
+  /** 地震情報の確認間隔。発表後すぐに出す */
+  quakePollMs: 10_000,
+  /** 大阪市を含む地震情報を出しておく時間 */
+  quakeShowMs: 3 * 60 * 60 * 1000,
+  /** 震度の市区町村コード（大阪市） */
+  quakeCityCode: "2710000",
   /** デモ（?demo=1） / ライブのみ（?live=1） / 地震デモ（?quake=1） */
   demoQuery: "demo",
   /**

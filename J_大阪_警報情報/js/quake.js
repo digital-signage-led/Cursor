@@ -1,3 +1,5 @@
+import { CONFIG } from "./config.js?v=20261026b";
+
 /** 販売機 地震緊急 640×192 · E.Q1.0（デモ） */
 
 export const CONTENT_VERSION = "E.Q1.0";
@@ -227,7 +229,7 @@ export function applyScene(idx) {
   const s = SCENES[idx % SCENES.length];
   sceneIndex = idx % SCENES.length;
   const keepEnter = root.classList.contains("is-enter");
-  root.classList.remove("is-severe", "is-extreme", "is-enter");
+  root.classList.remove("is-severe", "is-extreme", "is-enter", "is-live");
   if (s.severe) root.classList.add(s.severe);
   if (keepEnter) root.classList.add("is-enter");
 
@@ -249,7 +251,7 @@ export function hideQuake() {
   const machine = document.getElementById("machine");
   machine?.classList.remove("is-hidden");
   if (!root) return;
-  root.classList.remove("is-visible", "is-severe", "is-extreme", "is-enter");
+  root.classList.remove("is-visible", "is-severe", "is-extreme", "is-enter", "is-live");
   root.setAttribute("hidden", "");
 }
 
@@ -330,4 +332,174 @@ export function startQuakeLoop(sceneMs = 3500) {
     cycleTimer = setTimeout(tick, sceneMs);
   };
   cycleTimer = setTimeout(tick, sceneMs);
+}
+
+/** 大阪市と、その区。堺市（2714）は含めない */
+export function isOsakaCityCode(code) {
+  const c = String(code || "");
+  if (c === String(CONFIG.quakeCityCode || "2710000")) return true;
+  return /^271(?:0[2-9]|1[1-9]|2[0-8])\d{2}$/.test(c);
+}
+
+export function shindoKey(raw) {
+  const s = String(raw || "").trim();
+  if (s === "5-" || s === "５弱" || s === "5弱") return 5;
+  if (s === "5+" || s === "５強" || s === "5強") return "5u";
+  if (s === "6-" || s === "６弱" || s === "6弱") return 6;
+  if (s === "6+" || s === "６強" || s === "6強") return "6u";
+  if (s === "7" || s === "７") return 7;
+  const n = Number(s);
+  if (n >= 1 && n <= 4) return n;
+  return null;
+}
+
+function shindoRank(key) {
+  if (key === "5u") return 5.5;
+  if (key === "6u") return 6.5;
+  const n = Number(key);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function quakeTimeMs(item) {
+  if (!item) return 0;
+  const at = Date.parse(item.at || item.rdt || "");
+  if (Number.isFinite(at)) return at;
+  const c = String(item.ctt || "");
+  if (c.length < 14) return 0;
+  return Date.UTC(
+    Number(c.slice(0, 4)),
+    Number(c.slice(4, 6)) - 1,
+    Number(c.slice(6, 8)),
+    Number(c.slice(8, 10)) - 9,
+    Number(c.slice(10, 12)),
+    Number(c.slice(12, 14)),
+  );
+}
+
+function alertForRank(ttl, rank) {
+  const head = ttl && !/取消/.test(ttl) ? ttl : "地震情報";
+  if (rank >= 6) return `${head}　ただちに身を守って`;
+  if (rank >= 4) return `${head}　強い揺れに警戒`;
+  if (rank >= 3) return `${head}　揺れに注意`;
+  return `${head}　${LOCAL_CITY}で揺れを観測`;
+}
+
+/**
+ * 大阪市が震度に入っている発表だけ返す。新しいものを優先。
+ * @param {unknown} list
+ * @param {number} now
+ */
+export function pickOsakaQuake(list, now = Date.now()) {
+  if (!Array.isArray(list)) return null;
+  const showMs = CONFIG.quakeShowMs || 3 * 60 * 60 * 1000;
+  let best = null;
+  for (const item of list) {
+    const ift = String(item?.ift || "");
+    const ttl = String(item?.ttl || "");
+    if (ift.includes("取消") || ttl.includes("取消")) continue;
+    if (ift && ift !== "発表") continue;
+    let key = null;
+    let rank = 0;
+    for (const block of item.int || []) {
+      for (const city of block.city || []) {
+        if (!isOsakaCityCode(city.code)) continue;
+        const next = shindoKey(city.maxi || block.maxi);
+        const nextRank = shindoRank(next);
+        if (next != null && nextRank >= rank) {
+          key = next;
+          rank = nextRank;
+        }
+      }
+    }
+    if (key == null) continue;
+    const atMs = quakeTimeMs(item);
+    if (!atMs || now - atMs > showMs || atMs > now + 120000) continue;
+    if (!best || atMs > best.atMs || (atMs === best.atMs && rank > best.rank)) {
+      best = {
+        atMs,
+        eid: String(item.eid || item.ctt || atMs),
+        ttl: ttl || "地震情報",
+        epicenter: String(item.anm || ""),
+        mag: String(item.mag || ""),
+        localInt: key,
+        rank,
+        alert: alertForRank(ttl || "地震情報", rank),
+      };
+    }
+  }
+  return best;
+}
+
+const QUAKE_LIST_URLS = [
+  "/api/quake",
+  "http://127.0.0.1:8080/api/quake",
+  "https://www.jma.go.jp/bosai/quake/data/list.json",
+];
+
+export async function fetchOsakaQuake(now = Date.now()) {
+  let lastErr = null;
+  for (const url of QUAKE_LIST_URLS) {
+    try {
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) {
+        lastErr = new Error("quake HTTP " + res.status);
+        continue;
+      }
+      return pickOsakaQuake(await res.json(), now);
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw lastErr || new Error("地震情報取得失敗");
+}
+
+function setFrontLive(s) {
+  if (!root) return;
+  const meta = intMeta(s.localInt);
+  const main = $("#quakeFrontMain", root);
+  if (!main) return;
+  const text = `${LOCAL_CITY} 震度${meta.label}`;
+  main.textContent = text;
+  main.style.setProperty("--int-fg", meta.fg);
+  main.classList.toggle("is-wide", text.length >= 8);
+  const sub = $("#quakeFrontSub", root);
+  if (sub) {
+    const place = s.epicenter ? `震源 ${s.epicenter}` : "震源 ---";
+    const mag = s.mag ? ` / M${s.mag}` : "";
+    sub.textContent = place + mag;
+  }
+}
+
+function setSideTickerLive(s) {
+  if (!root) return;
+  const meta = intMeta(s.localInt);
+  const msg = `${LOCAL_CITY}　身の安全を確保してください　／　${meta.desc}`;
+  const unit = `<span>${msg}</span>`;
+  $$(".js-quake-side-ticker", root).forEach((track) => {
+    track.innerHTML = unit + unit + unit + unit;
+    track.style.animation = "none";
+    void track.offsetWidth;
+    track.style.animation = "";
+  });
+}
+
+/** 発表中の地震情報をすぐ出す（デモ文言なし） */
+export function showLiveQuake(q) {
+  if (!root || !q) return;
+  stopQuakeCycle();
+  root.classList.remove("is-severe", "is-extreme");
+  root.classList.add("is-live");
+  if (q.rank >= 6) root.classList.add("is-extreme");
+  else if (q.rank >= 4) root.classList.add("is-severe");
+  setTicker(q.alert);
+  setFrontLive(q);
+  setSideIntensity(q.localInt);
+  setSideTickerLive(q);
+  showQuake();
+  playEnter();
+}
+
+export function clearLiveQuake() {
+  root?.classList.remove("is-live");
+  hideQuake();
 }

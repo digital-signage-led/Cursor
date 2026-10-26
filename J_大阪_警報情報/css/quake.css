@@ -153,6 +153,10 @@ body.is-quake {
   white-space: nowrap;
 }
 
+.quake-stage.is-live .quake-demo-badge {
+  display: none;
+}
+
 .quake-demo-badge {
   flex-shrink: 0;
   margin-left: 10px;

@@ -1,4 +1,4 @@
-import { CONFIG } from "./config.js?v=20261026a";
+import { CONFIG } from "./config.js?v=20261026b";
 import {
   buildDemoWarnings,
   buildMarqueeText,
@@ -11,11 +11,14 @@ import {
 } from "./warnings.js";
 import { evacForLevel } from "./warning-codes.js";
 import {
+  clearLiveQuake,
+  fetchOsakaQuake,
   hideQuake,
   initQuake,
   runQuakeDemoCycle,
+  showLiveQuake,
   startQuakeLoop,
-} from "./quake.js";
+} from "./quake.js?v=20261026b";
 
 const $ = (id) => document.getElementById(id);
 
@@ -63,6 +66,8 @@ let cardRotateTimer = 0;
 let cardsAnimating = false;
 let sideSwapped = false;
 let playlistGen = 0;
+let liveQuakeKey_ = "";
+let quakePollBusy_ = false;
 
 function marqueeSpeed() {
   const custom = Number(els.machine?.dataset.speed);
@@ -399,9 +404,14 @@ function tagOsaka(state) {
   };
 }
 
+function liveQuakeOn_() {
+  const stage = els.quakeStage;
+  return !!(stage && stage.classList.contains("is-live") && !stage.hasAttribute("hidden"));
+}
+
 function render(state, opts = {}) {
-  // 警報画面表示時は地震を必ず閉じ、警報マシンを再表示
-  hideQuake();
+  /* 発表中の地震は警報の再描画で消さない */
+  if (!liveQuakeOn_()) hideQuake();
   const active = state.items.length > 0;
   const top = state.items[0];
   const theme = top?.theme || "advisory";
@@ -580,6 +590,29 @@ async function runPlaylist() {
   }
 }
 
+async function pollLiveQuake_() {
+  if (quakePollBusy_) return;
+  quakePollBusy_ = true;
+  try {
+    const q = await fetchOsakaQuake();
+    if (!q) {
+      if (liveQuakeKey_) {
+        liveQuakeKey_ = "";
+        clearLiveQuake();
+      }
+      return;
+    }
+    const key = q.eid + ":" + String(q.localInt);
+    if (key === liveQuakeKey_) return;
+    liveQuakeKey_ = key;
+    showLiveQuake(q);
+  } catch (err) {
+    console.warn("[地震] 取得失敗（表示中の地震は維持）:", (err && err.message) || err);
+  } finally {
+    quakePollBusy_ = false;
+  }
+}
+
 async function refreshFixed({ demo = false, notifyOnChange = true } = {}) {
   try {
     const state = demo ? loadDemoState() : await loadLiveState();
@@ -634,6 +667,10 @@ async function boot() {
     runPlaylist();
     return;
   }
+
+  /* 地震は警報より短い間隔で見る。発表が入ったらすぐ出す */
+  pollLiveQuake_();
+  setInterval(pollLiveQuake_, CONFIG.quakePollMs || 10_000);
 
   await refreshFixed({ demo: forceDemo, notifyOnChange: true });
   setInterval(
